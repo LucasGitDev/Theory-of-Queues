@@ -14,6 +14,7 @@ export function MM1KCalculator() {
   const [mu, setMu] = useState<string>("");
   const [k, setK] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [results, setResults] = useState<any>(null);
 
   const calculateResults = () => {
@@ -187,8 +188,8 @@ export function MM1KCalculator() {
             <CardContent className="p-6 flex flex-col items-center justify-center min-h-[200px] text-center">
               <h3 className="text-lg font-medium mb-2">Resultados</h3>
               <p className="text-muted-foreground">
-                Insira os parâmetros e clique em "Calcular" para ver os
-                resultados.
+                Insira os parâmetros e clique em &quot;Calcular&quot; para ver
+                os resultados.
               </p>
             </CardContent>
           </Card>

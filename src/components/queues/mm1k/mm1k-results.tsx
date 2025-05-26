@@ -24,7 +24,7 @@ interface MM1KResultsProps {
 }
 
 export function MM1KResults({ results, className }: MM1KResultsProps) {
-  const [activeTab, setActiveTab] = useState("summary");
+  const [, setActiveTab] = useState("summary");
 
   const formatNumber = (num: number) => {
     return num.toFixed(4);

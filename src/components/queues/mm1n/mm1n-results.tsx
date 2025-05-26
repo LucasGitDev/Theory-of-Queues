@@ -24,21 +24,21 @@ interface MM1NResultsProps {
 }
 
 export function MM1NResults({ results, className }: MM1NResultsProps) {
-  const [activeTab, setActiveTab] = useState("summary");
+  const [, setActiveTab] = useState("summary");
 
   const formatNumber = (num: number) => {
     return num.toFixed(4);
   };
 
-  // Função para calcular fatorial
-  const factorial = (n: number): number => {
-    if (n === 0 || n === 1) return 1;
-    let result = 1;
-    for (let i = 2; i <= n; i++) {
-      result *= i;
-    }
-    return result;
-  };
+  // // Função para calcular fatorial
+  // const factorial = (n: number): number => {
+  //   if (n === 0 || n === 1) return 1;
+  //   let result = 1;
+  //   for (let i = 2; i <= n; i++) {
+  //     result *= i;
+  //   }
+  //   return result;
+  // };
 
   return (
     <Card className={className}>
