@@ -10,27 +10,103 @@ import { AlertCircle } from "lucide-react";
 import { useState } from "react";
 
 export type MM1ResultsType = {
+  /**
+   * @property {number} lambda - A taxa de chegada (chegadas/unidade de tempo)
+   */
   lambda: number;
+
+  /**
+   * @property {number} mu - A taxa de serviço (1/tempo de serviço)
+   */
   mu: number;
+
+  /**
+   * @property {number} rho - A taxa de utilização
+   */
   rho: number;
+
+  /**
+   * @property {number} L - O número médio de clientes no sistema
+   */
   L: number;
+
+  /**
+   * @property {number} Lq - O número médio de clientes na fila
+   */
   Lq: number;
+
+  /**
+   * @property {number} W - O tempo médio de um cliente no sistema
+   */
   W: number;
+
+  /**
+   * @property {number} Wq - O tempo médio de um cliente na fila
+   */
   Wq: number;
+
+  /**
+   * @property {number} P0 - A probabilidade de um cliente não ter que esperar para ser servido
+   */
+  P0: number;
+
+  /**
+   * @property {number} waitingTime - O tempo de espera
+   */
+  waitingTime: number;
+
+  /**
+   * @property {number} Px - A probabilidade de um cliente ter que esperar mais de x tempo para ser atendido
+   */
+  Px: number | null;
+
+  /**
+   * @property {number} POccupied - A probabilidade do sistema estar ocupado - P(n > 0)
+   */
+  POccupied: number;
+
+  /**
+   * @property {number} Pn - A probabilidade de n clientes no sistema
+   */
+  Pn: number;
+
+  /**
+   * @property {number} Pnr - A probabilidade de que o número de clientes no sistema seja maior que r
+   */
+  Pnr: number;
+
+  /**
+   * @property {number} Pn0 - A probabilidade de que o número de clientes no sistema seja 0 (ocioso)
+   */
+  Pn0: number;
+
+  /**
+   * @property {number} PW - Probabilidade do tempo de esperar no sistema ser maior que w
+   */
+  PW: number;
+
+  /**
+   * @property {number} Pwq - Probabilidade do tempo de espera na fila ser maior que wq
+   */
+  Pwq: number;
 };
 
 export function MM1Calculator() {
   const [lambda, setLambda] = useState<string>("");
   const [mu, setMu] = useState<string>("");
+  const [waitingTime, setWaitingTime] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<MM1ResultsType | null>(null);
 
   const calculateResults = () => {
     const lambdaValue = Number.parseFloat(lambda);
     const muValue = Number.parseFloat(mu);
+    const waitingTimeValue = Number.parseFloat(waitingTime);
+    const r = 1;
+    const n = 1;
 
     if (isNaN(lambdaValue) || isNaN(muValue)) {
-      setError("Por favor, insira valores numéricos válidos.");
+      setError("Por favor, insira valores numéricos válidos para λ e μ.");
       return;
     }
 
@@ -41,28 +117,55 @@ export function MM1Calculator() {
 
     if (lambdaValue >= muValue) {
       setError(
-        "A taxa de chegada (λ) deve ser menor que a taxa de serviço (μ) para que o sistema seja estável."
+        "A taxa de chegada (λ) deve ser menor que a taxa de serviço (μ) para que o sistema seja estável. Caso contrário, a fila crescerá indefinidamente."
       );
       return;
     }
 
-    const rho = lambdaValue / muValue;
-    const L = rho / (1 - rho);
-    const Lq = Math.pow(rho, 2) / (1 - rho);
-    const W = 1 / (muValue - lambdaValue);
-    const Wq = rho / (muValue - lambdaValue);
+    if (waitingTimeValue && waitingTimeValue < 0) {
+      setError("O tempo de espera não pode ser negativo.");
+      return;
+    }
 
-    setResults({
+    const rho = lambdaValue / muValue;
+
+    const L = lambdaValue / (muValue - lambdaValue);
+    const Lq = Math.pow(lambdaValue, 2) / (muValue * (muValue - lambdaValue));
+    const W = 1 / (muValue - lambdaValue);
+    const Wq = lambdaValue / (muValue * (muValue - lambdaValue));
+    const P0 = 1 - rho;
+    const POccupied = rho;
+    const Pn = (1 - rho) * Math.pow(rho, n);
+    const Pnr = Math.pow(lambdaValue / muValue, r + 1);
+    const Pn0 = 1 - POccupied;
+    const PW = 1 - P0;
+    const Pwq = 1 - P0;
+    let Px = null;
+
+    if (waitingTimeValue) {
+      Px = Math.pow(rho, waitingTimeValue);
+    }
+
+    const results: MM1ResultsType = {
       lambda: lambdaValue,
       mu: muValue,
+      waitingTime: waitingTimeValue,
       rho,
       L,
       Lq,
       W,
       Wq,
-    });
+      P0,
+      POccupied,
+      Pn,
+      Pnr,
+      Px,
+      Pn0,
+      PW,
+      Pwq,
+    };
 
-    setError(null);
+    setResults(results);
   };
 
   return (
@@ -86,7 +189,7 @@ export function MM1Calculator() {
                 <Label htmlFor="lambda">
                   Taxa de chegada (λ)
                   <span className="ml-1 text-sm text-muted-foreground">
-                    (clientes/unidade de tempo)
+                    (chegadas/unidade de tempo)
                   </span>
                 </Label>
                 <Input
@@ -104,7 +207,7 @@ export function MM1Calculator() {
                 <Label htmlFor="mu">
                   Taxa de serviço (μ)
                   <span className="ml-1 text-sm text-muted-foreground">
-                    (clientes/unidade de tempo)
+                    (1/tempo de serviço)
                   </span>
                 </Label>
                 <Input
@@ -115,6 +218,24 @@ export function MM1Calculator() {
                   placeholder="Ex: 10"
                   value={mu}
                   onChange={(e) => setMu(e.target.value)}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="waitingTime">
+                  Tempo de espera (opcional)
+                  <span className="ml-1 text-sm text-muted-foreground">
+                    (unidade de tempo)
+                  </span>
+                </Label>
+                <Input
+                  id="waitingTime"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Ex: 2"
+                  value={waitingTime}
+                  onChange={(e) => setWaitingTime(e.target.value)}
                 />
               </div>
 
