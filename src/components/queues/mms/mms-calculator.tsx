@@ -13,11 +13,51 @@ export type MMSResultsType = {
   lambda: number;
   mu: number;
   s: number;
+
   rho: number;
+  /**
+   * @property {number} P0 - Probabilidade do sistema estar vazio (sem clientes)
+   */
   P0: number;
+
+  /**
+   * @property {number} Pn - Probabilidade de n clientes no sistema
+   */
+  Pn: number;
+
+  /**
+   * @property {number} n - Número de clientes no sistema
+   */
+  n: number;
+
+  /**
+   * @property {number} Pw - Probabilidade do tempo de espera no sistema (W) > t
+   */
+  Pw: number;
+
+  /**
+   * @property {number} Pwq - Probabilidade do tempo de espera na fila (Wq) > t
+   */
+  Pwq: number;
+
+  /**
+   * @property {number} Lq - Número médio de clientes na fila
+   */
   Lq: number;
+
+  /**
+   * @property {number} L - Número médio de clientes no sistema
+   */
   L: number;
+
+  /**
+   * @property {number} Wq - Tempo médio de espera na fila
+   */
   Wq: number;
+
+  /**
+   * @property {number} W - Tempo médio de espera no sistema
+   */
   W: number;
 };
 
@@ -25,8 +65,14 @@ export function MMSCalculator() {
   const [lambda, setLambda] = useState<string>("");
   const [mu, setMu] = useState<string>("");
   const [s, setS] = useState<string>("");
+  const [n, setN] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<MMSResultsType | null>(null);
+
+  const factorial = (n: number): number => {
+    if (n === 0) return 1;
+    return n * factorial(n - 1);
+  };
 
   const calculateResults = () => {
     const lambdaValue = Number.parseFloat(lambda);
@@ -50,34 +96,37 @@ export function MMSCalculator() {
 
     const rho = lambdaValue / (sValue * muValue);
 
-    if (rho >= 1) {
-      setError(
-        "A taxa de chegada (λ) deve ser menor que s*μ para que o sistema seja estável."
-      );
-      return;
+    let sumP0 = 0;
+
+    for (let i = 0; i <= sValue; i++) {
+      sumP0 += Math.pow(lambdaValue / muValue, i) / factorial(i);
     }
 
-    // Cálculo de P0 (probabilidade de sistema vazio)
-    let sum = 0;
-    for (let k = 0; k < sValue; k++) {
-      sum += Math.pow(lambdaValue / muValue, k) / factorial(k);
-    }
-    sum +=
-      (Math.pow(lambdaValue / muValue, sValue) / factorial(sValue)) *
-      (1 / (1 - rho));
-    const P0 = 1 / sum;
+    const P0 =
+      1 /
+      (sumP0 +
+        (Math.pow(lambdaValue / muValue, sValue) / factorial(sValue)) *
+          ((1 / (1 - lambdaValue)) * (sValue * muValue)));
 
-    // Cálculo de Lq (número médio na fila)
+    const t = 1; // Defina o valor de 't' conforme necessário
+    const Pw =
+      Math.exp(-muValue * t) *
+      (1 +
+        (((P0 * Math.pow(lambdaValue / muValue, sValue)) /
+          (factorial(sValue) * (1 - rho))) *
+          (1 - Math.exp(-muValue * (sValue - 1 - lambdaValue / muValue) * t))) /
+          (sValue - 1 - lambdaValue / muValue));
+
     const Lq =
-      (P0 * Math.pow(lambdaValue / muValue, sValue) * rho) /
+      (P0 * (Math.pow(lambdaValue / muValue, sValue) * rho)) /
       (factorial(sValue) * Math.pow(1 - rho, 2));
-
-    // Outros indicadores
-    const L = Lq + lambdaValue / muValue;
     const Wq = Lq / lambdaValue;
-    const W = Wq + 1 / muValue;
 
-    setResults({
+    const L = Lq + lambdaValue / muValue;
+
+    const W = L / lambdaValue;
+
+    const results: MMSResultsType = {
       lambda: lambdaValue,
       mu: muValue,
       s: sValue,
@@ -87,19 +136,15 @@ export function MMSCalculator() {
       L,
       Wq,
       W,
-    });
+      Pn: 0,
+      n: 0,
+      Pw,
+      Pwq: 0,
+    };
+
+    setResults(results);
 
     setError(null);
-  };
-
-  // Função para calcular fatorial
-  const factorial = (n: number): number => {
-    if (n === 0 || n === 1) return 1;
-    let result = 1;
-    for (let i = 2; i <= n; i++) {
-      result *= i;
-    }
-    return result;
   };
 
   return (
@@ -170,6 +215,24 @@ export function MMSCalculator() {
                   placeholder="Ex: 3"
                   value={s}
                   onChange={(e) => setS(e.target.value)}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="n">
+                  (n) clientes no sistema (Pn)
+                  <span className="ml-1 text-sm text-muted-foreground">
+                    (valor opcional)
+                  </span>
+                </Label>
+                <Input
+                  id="n"
+                  type="number"
+                  step="1"
+                  min="0"
+                  placeholder="Ex: 100"
+                  value={n}
+                  onChange={(e) => setN(e.target.value)}
                 />
               </div>
 

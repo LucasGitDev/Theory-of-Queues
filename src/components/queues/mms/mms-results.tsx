@@ -4,19 +4,10 @@ import { FormulaDisplay } from "@/components/queues/formula-display";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
+import { MMSResultsType } from "./mms-calculator";
 
 interface MMSResultsProps {
-  results: {
-    lambda: number;
-    mu: number;
-    s: number;
-    rho: number;
-    P0: number;
-    Lq: number;
-    L: number;
-    Wq: number;
-    W: number;
-  };
+  results: MMSResultsType;
   className?: string;
 }
 
@@ -276,6 +267,17 @@ export function MMSResults({ results, className }: MMSResultsProps) {
                     `W = ${formatNumber(results.W)}`,
                   ]}
                   explanation="O tempo médio que um cliente passa no sistema (W) inclui tanto o tempo de espera na fila quanto o tempo de atendimento."
+                />
+              </div>
+
+              <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                <h3 className="text-lg font-medium mb-2">
+                  Probabilidade do sistema estar ocioso (Pn0)
+                </h3>
+                <FormulaDisplay
+                  formula={"P_0 = P_0"}
+                  calculationSteps={[`P_0 = ${formatNumber(results.P0)}`]}
+                  explanation="Probabilidade do sistema estar vazio (sem clientes), ou seja, n=0."
                 />
               </div>
 
