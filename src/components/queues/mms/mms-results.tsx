@@ -148,6 +148,56 @@ export function MMSResults({ results, className }: MMSResultsProps) {
                     unidades de tempo
                   </div>
                 </div>
+
+                {results.n !== undefined && (
+                  <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Probabilidade de {results.n} clientes no sistema (P
+                      {results.n})
+                    </div>
+                    <div className="mt-1 text-2xl font-bold">
+                      {formatNumber(results.Pn)}
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Probabilidade de cliente na fila (P_queue)
+                  </div>
+                  <div className="mt-1 text-2xl font-bold">
+                    {formatNumber(results.P_queue)}
+                  </div>
+                </div>
+
+                {results.PW !== undefined && (
+                  <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Probabilidade de espera {">"} w (PW)
+                    </div>
+                    <div className="mt-1 text-2xl font-bold">
+                      {formatNumber(results.PW)}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      probabilidade do tempo de espera no sistema ser maior que
+                      w
+                    </div>
+                  </div>
+                )}
+
+                {results.Pwq !== undefined && (
+                  <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Probabilidade de espera na fila {">"} w (Pwq)
+                    </div>
+                    <div className="mt-1 text-2xl font-bold">
+                      {formatNumber(results.Pwq)}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      probabilidade do tempo de espera na fila ser maior que w
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
 
@@ -313,6 +363,98 @@ export function MMSResults({ results, className }: MMSResultsProps) {
                   />
                 </div>
               </div>
+
+              <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                <h3 className="text-lg font-medium mb-2">
+                  Probabilidade de cliente na fila (P_queue)
+                </h3>
+                <FormulaDisplay
+                  formula="P_{queue} = \\frac{P_0 (λ/μ)^s}{s!} \\cdot \\frac{1}{1-ρ}"
+                  calculationSteps={[
+                    `P_{queue} = \\frac{${formatNumber(results.P0)} \\cdot (${
+                      results.lambda
+                    }/${results.mu})^${results.s}}{${
+                      results.s
+                    }!} \\cdot \\frac{1}{1-${formatNumber(results.rho)}}`,
+                    `P_{queue} = ${formatNumber(results.P_queue)}`,
+                  ]}
+                  explanation="A probabilidade de um cliente chegar e encontrar todos os servidores ocupados, tendo que esperar na fila."
+                />
+              </div>
+
+              {results.n !== undefined && (
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <h3 className="text-lg font-medium mb-2">
+                    Probabilidade de {results.n} clientes no sistema (P
+                    {results.n})
+                  </h3>
+                  <FormulaDisplay
+                    formula={`P_n = \\begin{cases} 
+                      \\frac{(λ/μ)^n}{n!} P_0, & \\text{para } 0 \\leq n \\leq s \\\\
+                      \\frac{(λ/μ)^n}{s! \\cdot s^{n-s}} P_0, & \\text{para } n > s
+                      \\end{cases}`}
+                    calculationSteps={[
+                      results.n < results.s
+                        ? `P_${results.n} = \\frac{(${results.lambda}/${
+                            results.mu
+                          })^${results.n}}{${results.n}!} \\cdot ${formatNumber(
+                            results.P0
+                          )}`
+                        : `P_${results.n} = \\frac{(${results.lambda}/${
+                            results.mu
+                          })^${results.n}}{${results.s}! \\cdot ${results.s}^{${
+                            results.n
+                          }-${results.s}}} \\cdot ${formatNumber(results.P0)}`,
+                      `P_${results.n} = ${formatNumber(results.Pn)}`,
+                    ]}
+                    explanation="A probabilidade de haver exatamente n clientes no sistema."
+                  />
+                </div>
+              )}
+
+              {results.PW !== undefined && (
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <h3 className="text-lg font-medium mb-2">
+                    Probabilidade de espera {">"} w (PW)
+                  </h3>
+                  <FormulaDisplay
+                    formula="P(W > w) = e^{-μw} \\left[1 + \\frac{P_0 (λ/μ)^s}{s!(1-ρ)} \\cdot \\frac{1-e^{-μw(s-1-λ/μ)}}{s-1-λ/μ}\\right]"
+                    calculationSteps={[
+                      `P(W > w) = e^{-${
+                        results.mu
+                      }w} \\left[1 + \\frac{${formatNumber(results.P0)} (${
+                        results.lambda
+                      }/${results.mu})^${results.s}}{${
+                        results.s
+                      }!(1-${formatNumber(results.rho)})} \\cdot \\frac{1-e^{-${
+                        results.mu
+                      }w(${results.s}-1-${results.lambda}/${results.mu})}}{${
+                        results.s
+                      }-1-${results.lambda}/${results.mu}}\\right]`,
+                      `P(W > w) = ${formatNumber(results.PW)}`,
+                    ]}
+                    explanation="A probabilidade do tempo de espera no sistema ser maior que w."
+                  />
+                </div>
+              )}
+
+              {results.Pwq !== undefined && (
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <h3 className="text-lg font-medium mb-2">
+                    Probabilidade de espera na fila {">"} w (Pwq)
+                  </h3>
+                  <FormulaDisplay
+                    formula="P(W_q > w) = (1-P(W_q=0))e^{-μ(s-ρs)w}"
+                    calculationSteps={[
+                      `P(W_q > w) = (1-P(W_q=0))e^{-${results.mu}(${
+                        results.s
+                      }-${formatNumber(results.rho)}${results.s})w}`,
+                      `P(W_q > w) = ${formatNumber(results.Pwq)}`,
+                    ]}
+                    explanation="A probabilidade do tempo de espera na fila ser maior que w."
+                  />
+                </div>
+              )}
             </TabsContent>
           </div>
         </Tabs>
