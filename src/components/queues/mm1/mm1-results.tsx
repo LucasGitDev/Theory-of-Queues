@@ -170,7 +170,7 @@ export function MM1Results({ results, className }: MM1ResultsProps) {
                   </div>
                 </div>
 
-                {results.waitingTime && (
+                {/* {results.waitingTime && (
                   <div className="rounded-lg border p-4 bg-white dark:bg-slate-950 md:col-span-2">
                     <div className="text-sm font-medium text-muted-foreground">
                       Probabilidade de espera &gt; {results.waitingTime} (Px)
@@ -186,7 +186,7 @@ export function MM1Results({ results, className }: MM1ResultsProps) {
                       esperam mais de {results.waitingTime} unidades de tempo
                     </div>
                   </div>
-                )}
+                )} */}
 
                 <div className="rounded-lg border p-4 bg-white dark:bg-slate-950 md:col-span-2">
                   <div className="text-sm font-medium text-muted-foreground">
@@ -206,20 +206,21 @@ export function MM1Results({ results, className }: MM1ResultsProps) {
 
                 <div className="rounded-lg border p-4 bg-white dark:bg-slate-950 md:col-span-2">
                   <div className="text-sm font-medium text-muted-foreground">
-                    Probabilidade de exatamente 1 cliente no sistema (Pn, n=1)
+                    Probabilidade de exatamente {results.n} cliente no sistema (
+                    Pn, n={results.n})
                   </div>
                   <div className="mt-1 text-2xl font-bold">
                     {formatNumber(results.Pn, 4)}
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    n = 1
+                    n = {results.n}
                   </div>
                   <div className="mt-2 text-sm text-muted-foreground">
                     Probabilidade de haver exatamente 1 cliente no sistema
                   </div>
                 </div>
 
-                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950 md:col-span-2">
+                {/* <div className="rounded-lg border p-4 bg-white dark:bg-slate-950 md:col-span-2">
                   <div className="text-sm font-medium text-muted-foreground">
                     Probabilidade de mais de 1 cliente no sistema (Pnr, r=1)
                   </div>
@@ -232,7 +233,7 @@ export function MM1Results({ results, className }: MM1ResultsProps) {
                   <div className="mt-2 text-sm text-muted-foreground">
                     Probabilidade de haver mais de 1 cliente no sistema
                   </div>
-                </div>
+                </div> */}
 
                 <div className="rounded-lg border p-4 bg-white dark:bg-slate-950 md:col-span-2">
                   <div className="text-sm font-medium text-muted-foreground">

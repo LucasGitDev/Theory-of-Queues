@@ -26,6 +26,11 @@ export type MM1ResultsType = {
   rho: number;
 
   /**
+   * @property {number} n - O número de clientes no sistema
+   */
+  n: number;
+
+  /**
    * @property {number} L - O número médio de clientes no sistema
    */
   L: number;
@@ -56,11 +61,6 @@ export type MM1ResultsType = {
   waitingTime: number;
 
   /**
-   * @property {number} Px - A probabilidade de um cliente ter que esperar mais de x tempo para ser atendido
-   */
-  Px: number | null;
-
-  /**
    * @property {number} POccupied - A probabilidade do sistema estar ocupado - P(n > 0)
    */
   POccupied: number;
@@ -69,11 +69,6 @@ export type MM1ResultsType = {
    * @property {number} Pn - A probabilidade de n clientes no sistema
    */
   Pn: number;
-
-  /**
-   * @property {number} Pnr - A probabilidade de que o número de clientes no sistema seja maior que r
-   */
-  Pnr: number;
 
   /**
    * @property {number} Pn0 - A probabilidade de que o número de clientes no sistema seja 0 (ocioso)
@@ -95,6 +90,7 @@ export function MM1Calculator() {
   const [lambda, setLambda] = useState<string>("");
   const [mu, setMu] = useState<string>("");
   const [waitingTime, setWaitingTime] = useState<string>("");
+  const [n, setN] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<MM1ResultsType | null>(null);
 
@@ -102,8 +98,11 @@ export function MM1Calculator() {
     const lambdaValue = Number.parseFloat(lambda);
     const muValue = Number.parseFloat(mu);
     const waitingTimeValue = Number.parseFloat(waitingTime);
-    const r = 1;
-    const n = 1;
+    let nValue = Number.parseFloat(n);
+
+    if (nValue < 0 || !nValue) {
+      nValue = 0;
+    }
 
     if (isNaN(lambdaValue) || isNaN(muValue)) {
       setError("Por favor, insira valores numéricos válidos para λ e μ.");
@@ -129,28 +128,23 @@ export function MM1Calculator() {
 
     const rho = lambdaValue / muValue;
 
-    const L = lambdaValue / (muValue - lambdaValue);
-    const Lq = Math.pow(lambdaValue, 2) / (muValue * (muValue - lambdaValue));
+    const L = rho / (1 - rho);
+    const Lq = rho ** 2 / (1 - rho);
     const W = 1 / (muValue - lambdaValue);
-    const Wq = lambdaValue / (muValue * (muValue - lambdaValue));
+    const Wq = rho / (muValue - lambdaValue);
     const P0 = 1 - rho;
-    const POccupied = rho;
-    const Pn = (1 - rho) * Math.pow(rho, n);
-    const Pnr = Math.pow(lambdaValue / muValue, r + 1);
+    const Pn = (1 - rho) * Math.pow(rho, nValue);
+    const POccupied = 1 - P0;
     const Pn0 = 1 - POccupied;
-    const PW = 1 - P0;
-    const Pwq = 1 - P0;
-    let Px = null;
-
-    if (waitingTimeValue) {
-      Px = Math.pow(rho, waitingTimeValue);
-    }
+    const PW = Math.exp(-muValue * (1 - rho) * waitingTimeValue);
+    const Pwq = rho * Math.exp(-muValue * (1 - rho) * waitingTimeValue);
 
     const results: MM1ResultsType = {
       lambda: lambdaValue,
       mu: muValue,
       waitingTime: waitingTimeValue,
       rho,
+      n: nValue,
       L,
       Lq,
       W,
@@ -158,8 +152,6 @@ export function MM1Calculator() {
       P0,
       POccupied,
       Pn,
-      Pnr,
-      Px,
       Pn0,
       PW,
       Pwq,
@@ -236,6 +228,24 @@ export function MM1Calculator() {
                   placeholder="Ex: 2"
                   value={waitingTime}
                   onChange={(e) => setWaitingTime(e.target.value)}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="waitingTime">
+                  Número de clientes no sistema (opcional)
+                  <span className="ml-1 text-sm text-muted-foreground">
+                    (n)
+                  </span>
+                </Label>
+                <Input
+                  id="waitingTime"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Ex: 2"
+                  value={n}
+                  onChange={(e) => setN(e.target.value)}
                 />
               </div>
 
