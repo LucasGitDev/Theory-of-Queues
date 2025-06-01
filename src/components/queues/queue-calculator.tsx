@@ -7,104 +7,103 @@ import { MMSCalculator } from "@/components/queues/mms/mms-calculator";
 import { MMSKCalculator } from "@/components/queues/mmsk/mmsk-calculator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useQueryParams } from "@/utils/url-params";
+import { useMemo } from "react";
+
+type Model = {
+  value: string;
+  label: string;
+  description: string;
+};
+// M/M/1, M/M/c, M/M/1/K, M/M/c/K, M/M/1/N (População finita), M/M/c/N (população finita), M/G/1
+const models: Model[] = [
+  {
+    value: "mm1",
+    label: "M/M/1",
+    description:
+      "Fila com um único servidor, chegadas seguindo distribuição de Poisson e tempos de serviço exponenciais.",
+  },
+  {
+    value: "mms",
+    label: "M/M/s",
+    description:
+      "Fila com múltiplos servidores (s), chegadas seguindo distribuição de Poisson e tempos de serviço exponenciais.",
+  },
+  {
+    value: "mm1k",
+    label: "M/M/1/K",
+    description:
+      "Fila com um único servidor e capacidade limitada (K), chegadas seguindo distribuição de Poisson e tempos de serviço exponenciais.",
+  },
+  {
+    value: "mmsk",
+    label: "M/M/s/K",
+    description:
+      "Fila com múltiplos servidores (s) e capacidade limitada (K), chegadas seguindo distribuição de Poisson e tempos de serviço exponenciais.",
+  },
+  {
+    value: "mm1n",
+    label: "M/M/1/N",
+    description:
+      "Fila com um único servidor e população finita (N), chegadas seguindo distribuição de Poisson e tempos de serviço exponenciais.",
+  },
+  {
+    value: "mmsn",
+    label: "M/M/s/N",
+    description:
+      "Fila com múltiplos servidores (s) e população finita (N), chegadas seguindo distribuição de Poisson e tempos de serviço exponenciais.",
+  },
+  {
+    value: "mmg1",
+    label: "M/G/1",
+    description:
+      "Fila com um único servidor, chegadas seguindo distribuição de Poisson e tempos de serviço não exponenciais.",
+  },
+];
 
 export function QueueCalculator() {
-  const [selectedModel, setSelectedModel] = useState("mm1");
+  // memo the models
+  const memoizedModels = useMemo(() => models, []);
+  const { getQueryParam, setQueryParams } = useQueryParams();
+  const selectedModel = getQueryParam("model") || "mm1";
+
+  const handleModelChange = (value: string) => {
+    console.log(value);
+    setQueryParams({ model: value });
+  };
 
   return (
     <div className="max-w-4xl mx-auto">
       <Card className="border-none shadow-md">
         <CardContent className="p-0">
           <Tabs
-            defaultValue="mm1"
-            onValueChange={setSelectedModel}
+            value={selectedModel}
+            onValueChange={handleModelChange}
             className="w-full"
           >
             <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-t-lg">
-              <h2 className="text-xl font-semibold mb-3">Selecione o Modelo</h2>
+              <h2 className="text-xl font-semibold mb-3">
+                Selecione o Modelo {selectedModel}
+              </h2>
               <div className="overflow-x-auto pb-2">
                 <TabsList className="inline-flex min-w-full w-auto">
-                  <TabsTrigger
-                    value="mm1"
-                    className="flex-1 whitespace-nowrap px-3"
-                  >
-                    M/M/1
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="mms"
-                    className="flex-1 whitespace-nowrap px-3"
-                  >
-                    M/M/s
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="mm1k"
-                    className="flex-1 whitespace-nowrap px-3"
-                  >
-                    M/M/1/K
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="mmsk"
-                    className="flex-1 whitespace-nowrap px-3"
-                  >
-                    M/M/s/K
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="mm1n"
-                    className="flex-1 whitespace-nowrap px-3"
-                  >
-                    M/M/1/N
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="mmsn"
-                    className="flex-1 whitespace-nowrap px-3"
-                  >
-                    M/M/s/N
-                  </TabsTrigger>
+                  {memoizedModels.map((model) => (
+                    <TabsTrigger
+                      key={model.value}
+                      value={model.value}
+                      className="flex-1 whitespace-nowrap px-3"
+                    >
+                      {model.label}
+                    </TabsTrigger>
+                  ))}
                 </TabsList>
               </div>
 
               <div className="text-sm text-muted-foreground mt-4">
-                {selectedModel === "mm1" && (
-                  <p>
-                    Fila com um único servidor, chegadas seguindo distribuição
-                    de Poisson e tempos de serviço exponenciais.
-                  </p>
-                )}
-                {selectedModel === "mms" && (
-                  <p>
-                    Fila com múltiplos servidores (s), chegadas seguindo
-                    distribuição de Poisson e tempos de serviço exponenciais.
-                  </p>
-                )}
-                {selectedModel === "mm1k" && (
-                  <p>
-                    Fila com um único servidor e capacidade limitada (K),
-                    chegadas seguindo distribuição de Poisson e tempos de
-                    serviço exponenciais.
-                  </p>
-                )}
-                {selectedModel === "mmsk" && (
-                  <p>
-                    Fila com múltiplos servidores (s) e capacidade limitada (K),
-                    chegadas seguindo distribuição de Poisson e tempos de
-                    serviço exponenciais.
-                  </p>
-                )}
-                {selectedModel === "mm1n" && (
-                  <p>
-                    Fila com um único servidor e população finita (N), chegadas
-                    seguindo distribuição de Poisson e tempos de serviço
-                    exponenciais.
-                  </p>
-                )}
-                {/* {selectedModel === "mmsn" && (
-                  <p>
-                    Fila com múltiplos servidores (s) e população finita (N), chegadas
-                    seguindo distribuição de Poisson e tempos de serviço
-                    exponenciais.
-                  </p>
-                )} */}
+                {
+                  memoizedModels.find((model) => model.value === selectedModel)
+                    ?.description
+                }
               </div>
             </div>
 

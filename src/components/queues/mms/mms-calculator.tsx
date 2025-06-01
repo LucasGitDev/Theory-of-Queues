@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useQueryParams } from "@/utils/url-params";
 import { AlertCircle } from "lucide-react";
 import { useState } from "react";
 import { MMSResults } from "./mms-results";
@@ -20,52 +21,26 @@ export type MMSResultsType = {
    */
   P0: number;
 
-  /**
-   * @property {number} Pn - Probabilidade de n clientes no sistema
-   */
-  Pn: number;
-
-  /**
-   * @property {number} n - Número de clientes no sistema
-   */
-  n: number;
-
-  /**
-   * @property {number} Pw - Probabilidade do tempo de espera no sistema (W) > t
-   */
-  Pw: number;
-
-  /**
-   * @property {number} Pwq - Probabilidade do tempo de espera na fila (Wq) > t
-   */
-  Pwq: number;
-
-  /**
-   * @property {number} Lq - Número médio de clientes na fila
-   */
   Lq: number;
 
-  /**
-   * @property {number} L - Número médio de clientes no sistema
-   */
   L: number;
 
-  /**
-   * @property {number} Wq - Tempo médio de espera na fila
-   */
   Wq: number;
 
-  /**
-   * @property {number} W - Tempo médio de espera no sistema
-   */
   W: number;
+
+  n: number;
 };
 
 export function MMSCalculator() {
-  const [lambda, setLambda] = useState<string>("");
-  const [mu, setMu] = useState<string>("");
-  const [s, setS] = useState<string>("");
-  const [n, setN] = useState<string>("");
+  const { getQueryParam, setQueryParams } = useQueryParams();
+
+  const [lambdaState, setLambdaState] = useState<string>(
+    getQueryParam("lambda") || ""
+  );
+  const [muState, setMuState] = useState<string>(getQueryParam("mu") || "");
+  const [sState, setSState] = useState<string>(getQueryParam("s") || "");
+  const [nState, setNState] = useState<string>(getQueryParam("n") || "");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<MMSResultsType | null>(null);
 
@@ -74,72 +49,83 @@ export function MMSCalculator() {
     return n * factorial(n - 1);
   };
 
-  const calculateResults = () => {
-    const lambdaValue = Number.parseFloat(lambda);
-    const muValue = Number.parseFloat(mu);
-    const sValue = Number.parseInt(s);
+  /**
+   * Função para calcular o somatório da expressão (lambda/mu)^n / n!
+   * para n de 0 até s-1.
+   *
+   * @param lambda - Taxa média de chegada.
+   * @param mu - Taxa média de atendimento.
+   * @param s - Número de servidores.
+   * @returns Valor do somatório.
+   */
+  function summatory(lambda: number, mu: number, s: number): number {
+    let soma = 0;
+    const fator = lambda / mu;
 
-    if (isNaN(lambdaValue) || isNaN(muValue) || isNaN(sValue)) {
+    for (let n = 0; n <= s - 1; n++) {
+      soma += Math.pow(fator, n) / factorial(n);
+    }
+
+    return soma;
+  }
+
+  const calculateResults = () => {
+    const lambda = Number.parseFloat(lambdaState);
+    const mu = Number.parseFloat(muState);
+    const s = Number.parseInt(sState);
+    const n = Number.parseInt(nState);
+
+    setQueryParams({
+      lambda: lambda.toString(),
+      mu: mu.toString(),
+      s: s.toString(),
+      n: n.toString(),
+    });
+
+    if (isNaN(lambda) || isNaN(mu) || isNaN(s)) {
       setError("Por favor, insira valores numéricos válidos.");
       return;
     }
 
-    if (lambdaValue <= 0 || muValue <= 0 || sValue <= 0) {
+    if (lambda <= 0 || mu <= 0 || s <= 0) {
       setError("Os valores de λ, μ e s devem ser maiores que zero.");
       return;
     }
 
-    if (sValue !== Math.floor(sValue)) {
+    if (s !== Math.floor(s)) {
       setError("O número de servidores (s) deve ser um número inteiro.");
       return;
     }
 
-    const rho = lambdaValue / (sValue * muValue);
+    const rho = lambda / mu;
 
-    let sumP0 = 0;
+    const P0_1 = summatory(lambda, mu, s);
+    const P0_2 = (lambda / mu) ** s / factorial(s);
+    const P0_3 = 1 / ((1 - lambda) / (s * mu));
 
-    for (let i = 0; i <= sValue; i++) {
-      sumP0 += Math.pow(lambdaValue / muValue, i) / factorial(i);
-    }
+    const P0 = 1 / (P0_1 + P0_2 * P0_3);
 
-    const P0 =
-      1 /
-      (sumP0 +
-        (Math.pow(lambdaValue / muValue, sValue) / factorial(sValue)) *
-          ((1 / (1 - lambdaValue)) * (sValue * muValue)));
+    const P_ocup = (rho ** s / (factorial(s - 1) * (s - rho))) * P0;
 
-    const t = 1; // Defina o valor de 't' conforme necessário
-    const Pw =
-      Math.exp(-muValue * t) *
-      (1 +
-        (((P0 * Math.pow(lambdaValue / muValue, sValue)) /
-          (factorial(sValue) * (1 - rho))) *
-          (1 - Math.exp(-muValue * (sValue - 1 - lambdaValue / muValue) * t))) /
-          (sValue - 1 - lambdaValue / muValue));
+    const Lq = (rho / (s - rho)) * P_ocup;
 
-    const Lq =
-      (P0 * (Math.pow(lambdaValue / muValue, sValue) * rho)) /
-      (factorial(sValue) * Math.pow(1 - rho, 2));
-    const Wq = Lq / lambdaValue;
+    const Wq = Lq / lambda;
 
-    const L = Lq + lambdaValue / muValue;
+    const L = Lq + lambda / mu;
 
-    const W = L / lambdaValue;
+    const W = L / lambda;
 
     const results: MMSResultsType = {
-      lambda: lambdaValue,
-      mu: muValue,
-      s: sValue,
+      lambda,
+      mu,
+      s,
       rho,
       P0,
       Lq,
       L,
       Wq,
       W,
-      Pn: 0,
-      n: 0,
-      Pw,
-      Pwq: 0,
+      n,
     };
 
     setResults(results);
@@ -177,8 +163,8 @@ export function MMSCalculator() {
                   step="0.01"
                   min="0.01"
                   placeholder="Ex: 10"
-                  value={lambda}
-                  onChange={(e) => setLambda(e.target.value)}
+                  value={lambdaState}
+                  onChange={(e) => setLambdaState(e.target.value)}
                 />
               </div>
 
@@ -195,8 +181,8 @@ export function MMSCalculator() {
                   step="0.01"
                   min="0.01"
                   placeholder="Ex: 4"
-                  value={mu}
-                  onChange={(e) => setMu(e.target.value)}
+                  value={muState}
+                  onChange={(e) => setMuState(e.target.value)}
                 />
               </div>
 
@@ -213,8 +199,8 @@ export function MMSCalculator() {
                   step="1"
                   min="1"
                   placeholder="Ex: 3"
-                  value={s}
-                  onChange={(e) => setS(e.target.value)}
+                  value={sState}
+                  onChange={(e) => setSState(e.target.value)}
                 />
               </div>
 
@@ -231,8 +217,8 @@ export function MMSCalculator() {
                   step="1"
                   min="0"
                   placeholder="Ex: 100"
-                  value={n}
-                  onChange={(e) => setN(e.target.value)}
+                  value={nState}
+                  onChange={(e) => setNState(e.target.value)}
                 />
               </div>
 
