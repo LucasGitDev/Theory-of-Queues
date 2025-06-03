@@ -1,4 +1,5 @@
 import { QueueCalculator } from "@/components/queues/queue-calculator";
+import { Suspense } from "react";
 
 export default function Home() {
   return (
@@ -10,7 +11,9 @@ export default function Home() {
         <p className="text-center text-muted-foreground mb-8">
           Resolva problemas de teoria das filas com diferentes modelos
         </p>
-        <QueueCalculator />
+        <Suspense fallback={<div>Loading...</div>}>
+          <QueueCalculator />
+        </Suspense>
       </div>
     </main>
   );
