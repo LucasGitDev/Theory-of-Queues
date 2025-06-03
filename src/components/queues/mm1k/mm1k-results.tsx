@@ -4,33 +4,19 @@ import { FormulaDisplay } from "@/components/queues/formula-display";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
+import { MM1KResultsType } from "./mm1k-calculator";
 
 interface MM1KResultsProps {
-  results: {
-    lambda: number;
-    mu: number;
-    k: number;
-    rho: number;
-    P0: number;
-    PK: number;
-    lambdaEff: number;
-    L: number;
-    Lq: number;
-    W: number;
-    Wq: number;
-    Pn: number[];
-  };
+  results: MM1KResultsType;
   className?: string;
 }
 
 export function MM1KResults({ results, className }: MM1KResultsProps) {
   const [, setActiveTab] = useState("summary");
 
-  const formatNumber = (num: number) => {
-    return num.toFixed(4);
+  const formatNumber = (num: number, precision: number = 4) => {
+    return num.toFixed(precision);
   };
-
-  const isRhoOne = Math.abs(results.rho - 1.0) < 0.000001;
 
   return (
     <Card className={className}>
@@ -83,19 +69,31 @@ export function MM1KResults({ results, className }: MM1KResultsProps) {
                   </div>
                   <div className="mt-1 text-2xl font-bold">{results.k}</div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    clientes no máximo
+                    clientes
                   </div>
                 </div>
 
                 <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
                   <div className="text-sm font-medium text-muted-foreground">
-                    Utilização do sistema (ρ)
+                    Intensidade de tráfego (ρ)
                   </div>
                   <div className="mt-1 text-2xl font-bold">
                     {formatNumber(results.rho)}
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
                     fração do tempo que o servidor está ocupado
+                  </div>
+                </div>
+
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Taxa efetiva de chegada (λeff)
+                  </div>
+                  <div className="mt-1 text-2xl font-bold">
+                    {formatNumber(results.lambdaEff)}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    clientes/unidade de tempo
                   </div>
                 </div>
 
@@ -110,25 +108,10 @@ export function MM1KResults({ results, className }: MM1KResultsProps) {
 
                 <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
                   <div className="text-sm font-medium text-muted-foreground">
-                    Probabilidade de perda (P_K)
+                    Probabilidade de bloqueio (PK)
                   </div>
                   <div className="mt-1 text-2xl font-bold">
                     {formatNumber(results.PK)}
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    probabilidade de sistema cheio
-                  </div>
-                </div>
-
-                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Taxa efetiva de chegada (λ_eff)
-                  </div>
-                  <div className="mt-1 text-2xl font-bold">
-                    {formatNumber(results.lambdaEff)}
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    clientes/unidade de tempo
                   </div>
                 </div>
 
@@ -179,6 +162,54 @@ export function MM1KResults({ results, className }: MM1KResultsProps) {
                     unidades de tempo
                   </div>
                 </div>
+
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Custo de espera por cliente
+                  </div>
+                  <div className="mt-1 text-2xl font-bold">
+                    {formatNumber(results.waitingCost)}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    unidades monetárias
+                  </div>
+                </div>
+
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Custo de serviço por cliente
+                  </div>
+                  <div className="mt-1 text-2xl font-bold">
+                    {formatNumber(results.serviceCost)}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    unidades monetárias
+                  </div>
+                </div>
+
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Número de clientes no sistema
+                  </div>
+                  <div className="mt-1 text-2xl font-bold">
+                    {results.numClients}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    clientes
+                  </div>
+                </div>
+
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Custo total do sistema
+                  </div>
+                  <div className="mt-1 text-2xl font-bold">
+                    {formatNumber(results.totalCost)}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    unidades monetárias
+                  </div>
+                </div>
               </div>
             </TabsContent>
 
@@ -190,10 +221,12 @@ export function MM1KResults({ results, className }: MM1KResultsProps) {
                 <FormulaDisplay
                   formula="ρ = \\frac{λ}{μ}"
                   calculationSteps={[
-                    `ρ = \\frac{${results.lambda}}{${results.mu}}`,
+                    `ρ = \\frac{${formatNumber(results.lambda)}}{${formatNumber(
+                      results.mu
+                    )}}`,
                     `ρ = ${formatNumber(results.rho)}`,
                   ]}
-                  explanation="A utilização do sistema (ρ) representa a fração do tempo que o servidor está ocupado. No modelo M/M/1/K, ρ pode ser maior ou igual a 1, pois a capacidade limitada impede que o sistema fique instável."
+                  explanation="A utilização do sistema (ρ) representa a fração do tempo que o servidor está ocupado."
                 />
               </div>
 
@@ -201,85 +234,49 @@ export function MM1KResults({ results, className }: MM1KResultsProps) {
                 <h3 className="text-lg font-medium mb-2">
                   Probabilidade de sistema vazio (P₀)
                 </h3>
-                {isRhoOne ? (
-                  <FormulaDisplay
-                    formula="P_0 = \\frac{1}{K+1} \\quad \\text{(para } ρ = 1 \\text{)}"
-                    calculationSteps={[
-                      `P_0 = \\frac{1}{${results.k}+1}`,
-                      `P_0 = \\frac{1}{${results.k + 1}}`,
-                      `P_0 = ${formatNumber(results.P0)}`,
-                    ]}
-                    explanation="A probabilidade de sistema vazio (P₀) quando ρ = 1 é calculada como 1/(K+1)."
-                  />
-                ) : (
-                  <FormulaDisplay
-                    formula="P_0 = \\frac{1-ρ}{1-ρ^{K+1}} \\quad \\text{(para } ρ \\neq 1 \\text{)}"
-                    calculationSteps={[
-                      `P_0 = \\frac{1-${formatNumber(
-                        results.rho
-                      )}}{1-${formatNumber(results.rho)}^{${results.k}+1}}`,
-                      `P_0 = \\frac{${formatNumber(
-                        1 - results.rho
-                      )}}{${formatNumber(
-                        1 - Math.pow(results.rho, results.k + 1)
-                      )}}`,
-                      `P_0 = ${formatNumber(results.P0)}`,
-                    ]}
-                    explanation="A probabilidade de sistema vazio (P₀) quando ρ ≠ 1 é calculada como (1-ρ)/(1-ρ^(K+1))."
-                  />
-                )}
-              </div>
-
-              <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
-                <h3 className="text-lg font-medium mb-2">
-                  Probabilidades de estado (P_n)
-                </h3>
                 <FormulaDisplay
-                  formula="P_n = ρ^n \\cdot P_0 \\quad \\text{para } 0 \\leq n \\leq K"
+                  formula="P_0 = \\begin{cases} \\frac{1-ρ}{1-ρ^{K+1}}, & \\text{se } ρ \\neq 1 \\\\ \\frac{1}{K+1}, & \\text{se } ρ = 1 \\end{cases}"
                   calculationSteps={[
-                    `P_n = ${formatNumber(results.rho)}^n \\cdot ${formatNumber(
-                      results.P0
-                    )} \\quad \\text{para } 0 \\leq n \\leq ${results.k}`,
+                    results.rho === 1
+                      ? `P_0 = \\frac{1}{${results.k + 1}}`
+                      : `P_0 = \\frac{1-${formatNumber(
+                          results.rho
+                        )}}{1-${formatNumber(results.rho)}^{${results.k + 1}}}`,
+                    `P_0 = ${formatNumber(results.P0)}`,
                   ]}
-                  explanation="As probabilidades de estado (P_n) representam a probabilidade de haver n clientes no sistema."
+                  explanation="A probabilidade de sistema vazio (P₀) é a probabilidade de não haver clientes no sistema."
                 />
               </div>
 
               <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
                 <h3 className="text-lg font-medium mb-2">
-                  Probabilidade de perda (P_K)
+                  Probabilidade de perda (PK)
                 </h3>
                 <FormulaDisplay
-                  formula="P_K = ρ^K \\cdot P_0"
+                  formula="P_K = ρ^K P_0"
                   calculationSteps={[
                     `P_K = ${formatNumber(results.rho)}^${
                       results.k
                     } \\cdot ${formatNumber(results.P0)}`,
-                    `P_K = ${formatNumber(
-                      Math.pow(results.rho, results.k)
-                    )} \\cdot ${formatNumber(results.P0)}`,
                     `P_K = ${formatNumber(results.PK)}`,
                   ]}
-                  explanation="A probabilidade de perda (P_K) é a probabilidade de o sistema estar cheio, resultando na rejeição de novos clientes."
+                  explanation="A probabilidade de perda (PK) é a probabilidade de um cliente chegar e encontrar o sistema cheio."
                 />
               </div>
 
               <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
                 <h3 className="text-lg font-medium mb-2">
-                  Taxa efetiva de chegada (λ_eff)
+                  Taxa efetiva de chegada (λeff)
                 </h3>
                 <FormulaDisplay
                   formula="λ_{eff} = λ(1-P_K)"
                   calculationSteps={[
-                    `λ_{eff} = ${results.lambda} \\cdot (1-${formatNumber(
-                      results.PK
-                    )})`,
-                    `λ_{eff} = ${results.lambda} \\cdot ${formatNumber(
-                      1 - results.PK
-                    )}`,
+                    `λ_{eff} = ${formatNumber(
+                      results.lambda
+                    )} \\cdot (1-${formatNumber(results.PK)})`,
                     `λ_{eff} = ${formatNumber(results.lambdaEff)}`,
                   ]}
-                  explanation="A taxa efetiva de chegada (λ_eff) é a taxa de clientes que efetivamente entram no sistema, considerando as perdas devido à capacidade limitada."
+                  explanation="A taxa efetiva de chegada (λeff) é a taxa de chegada ajustada pela probabilidade de perda."
                 />
               </div>
 
@@ -287,33 +284,22 @@ export function MM1KResults({ results, className }: MM1KResultsProps) {
                 <h3 className="text-lg font-medium mb-2">
                   Número médio de clientes no sistema (L)
                 </h3>
-                {isRhoOne ? (
-                  <FormulaDisplay
-                    formula="L = \\frac{K}{2} \\quad \\text{(para } ρ = 1 \\text{)}"
-                    calculationSteps={[
-                      `L = \\frac{${results.k}}{2}`,
-                      `L = ${formatNumber(results.k / 2)}`,
-                    ]}
-                    explanation="O número médio de clientes no sistema (L) quando ρ = 1 é calculado como K/2."
-                  />
-                ) : (
-                  <FormulaDisplay
-                    formula="L = \\frac{ρ[1-(K+1)ρ^K+Kρ^{K+1}]}{(1-ρ)(1-ρ^{K+1})} \\quad \\text{(para } ρ \\neq 1 \\text{)}"
-                    calculationSteps={[
-                      `L = \\frac{${formatNumber(results.rho)}[1-(${
-                        results.k
-                      }+1)${formatNumber(results.rho)}^${results.k}+${
-                        results.k
-                      }${formatNumber(results.rho)}^{${
-                        results.k
-                      }+1}]}{(1-${formatNumber(results.rho)})(1-${formatNumber(
-                        results.rho
-                      )}^{${results.k}+1})}`,
-                      `L = ${formatNumber(results.L)}`,
-                    ]}
-                    explanation="O número médio de clientes no sistema (L) quando ρ ≠ 1 é calculado usando a fórmula acima."
-                  />
-                )}
+                <FormulaDisplay
+                  formula="L = \\begin{cases} \\frac{ρ}{1-ρ} - \\frac{(K+1)ρ^{K+1}}{1-ρ^{K+1}}, & \\text{se } ρ \\neq 1 \\\\ \\frac{K}{2}, & \\text{se } ρ = 1 \\end{cases}"
+                  calculationSteps={[
+                    results.rho === 1
+                      ? `L = \\frac{${results.k}}{2}`
+                      : `L = \\frac{${formatNumber(
+                          results.rho
+                        )}}{1-${formatNumber(results.rho)}} - \\frac{(${
+                          results.k + 1
+                        })${formatNumber(results.rho)}^{${
+                          results.k + 1
+                        }}}{1-${formatNumber(results.rho)}^{${results.k + 1}}}`,
+                    `L = ${formatNumber(results.L)}`,
+                  ]}
+                  explanation="O número médio de clientes no sistema (L) inclui tanto os clientes em atendimento quanto os que estão na fila."
+                />
               </div>
 
               <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
@@ -321,14 +307,11 @@ export function MM1KResults({ results, className }: MM1KResultsProps) {
                   Número médio de clientes na fila (Lq)
                 </h3>
                 <FormulaDisplay
-                  formula="L_q = L - (1 - P_0)"
+                  formula="L_q = L - (1-P_0)"
                   calculationSteps={[
-                    `L_q = ${formatNumber(results.L)} - (1 - ${formatNumber(
+                    `L_q = ${formatNumber(results.L)} - (1-${formatNumber(
                       results.P0
                     )})`,
-                    `L_q = ${formatNumber(results.L)} - ${formatNumber(
-                      1 - results.P0
-                    )}`,
                     `L_q = ${formatNumber(results.Lq)}`,
                   ]}
                   explanation="O número médio de clientes na fila (Lq) representa apenas os clientes que estão aguardando atendimento."
@@ -373,27 +356,23 @@ export function MM1KResults({ results, className }: MM1KResultsProps) {
                 </h3>
                 <div className="mt-2 space-y-3">
                   <FormulaDisplay
-                    formula="L = λ_{eff} \\cdot W"
+                    formula="L = λ_{eff}W"
                     calculationSteps={[
                       `L = ${formatNumber(
                         results.lambdaEff
                       )} \\cdot ${formatNumber(results.W)}`,
-                      `L = ${formatNumber(
-                        results.lambdaEff * results.W
-                      )} \\approx ${formatNumber(results.L)}`,
+                      `L = ${formatNumber(results.L)}`,
                     ]}
                     explanation="Lei de Little para o sistema: o número médio de clientes no sistema é igual à taxa efetiva de chegada vezes o tempo médio no sistema."
                   />
 
                   <FormulaDisplay
-                    formula="L_q = λ_{eff} \\cdot W_q"
+                    formula="L_q = λ_{eff}W_q"
                     calculationSteps={[
                       `L_q = ${formatNumber(
                         results.lambdaEff
                       )} \\cdot ${formatNumber(results.Wq)}`,
-                      `L_q = ${formatNumber(
-                        results.lambdaEff * results.Wq
-                      )} \\approx ${formatNumber(results.Lq)}`,
+                      `L_q = ${formatNumber(results.Lq)}`,
                     ]}
                     explanation="Lei de Little para a fila: o número médio de clientes na fila é igual à taxa efetiva de chegada vezes o tempo médio na fila."
                   />
@@ -401,19 +380,43 @@ export function MM1KResults({ results, className }: MM1KResultsProps) {
                   <FormulaDisplay
                     formula="W = W_q + \\frac{1}{μ}"
                     calculationSteps={[
-                      `W = ${formatNumber(results.Wq)} + \\frac{1}{${
-                        results.mu
-                      }}`,
-                      `W = ${formatNumber(results.Wq)} + ${formatNumber(
-                        1 / results.mu
-                      )}`,
                       `W = ${formatNumber(
-                        results.Wq + 1 / results.mu
-                      )} \\approx ${formatNumber(results.W)}`,
+                        results.Wq
+                      )} + \\frac{1}{${formatNumber(results.mu)}}`,
+                      `W = ${formatNumber(results.W)}`,
                     ]}
                     explanation="O tempo médio no sistema é igual ao tempo médio na fila mais o tempo médio de atendimento."
                   />
+
+                  <FormulaDisplay
+                    formula="L = L_q + (1-P_0)"
+                    calculationSteps={[
+                      `L = ${formatNumber(results.Lq)} + (1-${formatNumber(
+                        results.P0
+                      )})`,
+                      `L = ${formatNumber(results.L)}`,
+                    ]}
+                    explanation="O número médio de clientes no sistema é igual ao número médio na fila mais a probabilidade do sistema estar ocupado."
+                  />
                 </div>
+              </div>
+
+              <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                <h3 className="text-lg font-medium mb-2">
+                  Cálculo do Custo Total
+                </h3>
+                <FormulaDisplay
+                  formula="Custo_{total} = Custo_{espera} \\cdot L_q + Custo_{serviço} \\cdot N"
+                  calculationSteps={[
+                    `Custo_{total} = ${formatNumber(
+                      results.waitingCost
+                    )} \\cdot ${formatNumber(results.Lq)} + ${formatNumber(
+                      results.serviceCost
+                    )} \\cdot ${results.numClients}`,
+                    `Custo_{total} = ${formatNumber(results.totalCost)}`,
+                  ]}
+                  explanation="O custo total do sistema é composto pelo custo de espera (custo de espera por cliente multiplicado pelo número médio de clientes na fila) mais o custo de serviço (custo de serviço por cliente multiplicado pelo número total de clientes no sistema)."
+                />
               </div>
             </TabsContent>
           </div>
