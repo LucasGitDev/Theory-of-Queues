@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQueryParams } from "@/utils/url-params";
 import { useMemo } from "react";
+import { MG1Calculator } from "./mmg1/mmg1-calculator";
 
 type Model = {
   value: string;
@@ -126,6 +127,9 @@ export function QueueCalculator() {
               {/* <TabsContent value="mmsn" className="mt-0">
                 <MMSNCalculator />
               </TabsContent> */}
+              <TabsContent value="mmg1" className="mt-0">
+                <MG1Calculator />
+              </TabsContent>
             </div>
           </Tabs>
         </CardContent>
