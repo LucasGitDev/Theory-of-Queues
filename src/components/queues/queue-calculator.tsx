@@ -11,6 +11,7 @@ import { useQueryParams } from "@/utils/url-params";
 import { useMemo } from "react";
 import { MG1Calculator } from "./mg1/mg1-calculator";
 import { MG1PCalculator } from "./mg1Priority/mg1Priority-calculator";
+import { MMSNCalculator } from "./mmsn/mmsn-calculator";
 
 type Model = {
   value: string;
@@ -131,9 +132,9 @@ export function QueueCalculator() {
               <TabsContent value="mm1n" className="mt-0">
                 <MM1NCalculator />
               </TabsContent>
-              {/* <TabsContent value="mmsn" className="mt-0">
+              <TabsContent value="mmsn" className="mt-0">
                 <MMSNCalculator />
-              </TabsContent> */}
+              </TabsContent>
               <TabsContent value="mmg1" className="mt-0">
                 <MG1Calculator />
               </TabsContent>
