@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQueryParams } from "@/utils/url-params";
 import { useMemo } from "react";
 import { MG1Calculator } from "./mmg1/mmg1-calculator";
+import { MG1PCalculator } from "./mg1-p/mg1-p-calculator";
 
 type Model = {
   value: string;
@@ -60,6 +61,12 @@ const models: Model[] = [
     description:
       "Fila com um único servidor, chegadas seguindo distribuição de Poisson e tempos de serviço não exponenciais.",
   },
+  {
+    value: "mg1-p",
+    label: "M/G/1 com prioridades",
+    description:
+      "Arrumar",
+  }
 ];
 
 export function QueueCalculator() {
@@ -129,6 +136,9 @@ export function QueueCalculator() {
               </TabsContent> */}
               <TabsContent value="mmg1" className="mt-0">
                 <MG1Calculator />
+              </TabsContent>
+              <TabsContent value="mg1-p" className="mt-0">
+                <MG1PCalculator />
               </TabsContent>
             </div>
           </Tabs>
