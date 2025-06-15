@@ -4,7 +4,7 @@ import { FormulaDisplay } from "@/components/queues/formula-display";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
-import { MG1ResultsType } from "./mmg1-calculator";
+import { MG1ResultsType } from "./mg1-calculator";
 
 interface MMG1ResultsProps {
   results: MG1ResultsType;
@@ -152,7 +152,7 @@ export function MMG1Results({ results, className }: MMG1ResultsProps) {
                   </div>
                 </div>
 
-                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950 md:col-span-2">
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
                   <div className="text-sm font-medium text-muted-foreground">
                     Tempo médio na fila (Wq)
                   </div>
@@ -181,21 +181,6 @@ export function MMG1Results({ results, className }: MMG1ResultsProps) {
                   <div className="mt-2 text-sm text-muted-foreground">
                     O sistema está vazio {formatNumber(results.P0 * 100)}% do
                     tempo
-                  </div>
-                </div>
-
-                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950 md:col-span-2">
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Coeficiente de variação (C)
-                  </div>
-                  <div className="mt-1 text-2xl font-bold">
-                    {formatNumber(results.sigmaSquared)}
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    adimensional
-                  </div>
-                  <div className="mt-2 text-sm text-muted-foreground">
-                    Mede a variabilidade relativa do tempo de serviço
                   </div>
                 </div>
               </div>
@@ -284,20 +269,6 @@ export function MMG1Results({ results, className }: MMG1ResultsProps) {
                     `P_0 = ${formatNumber(results.P0, 4)}`,
                   ]}
                   explanation="A probabilidade do sistema estar vazio é complementar à utilização do sistema."
-                />
-              </div>
-
-              <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
-                <h3 className="text-lg font-medium mb-2">
-                  Coeficiente de variação (C)
-                </h3>
-                <FormulaDisplay
-                  formula={"C = \\frac{\\sigma}{E[S]}"}
-                  calculationSteps={[
-                    `C = \\frac{${formatNumber(Math.sqrt(results.sigmaSquared), 4)}}{${formatNumber(1 / results.mu, 4)}}`,
-                    `C = ${formatNumber(results.sigmaSquared, 4)}`,
-                  ]}
-                  explanation="O coeficiente de variação mede a variabilidade relativa do tempo de serviço, onde σ é o desvio padrão e E[S] é o tempo médio de serviço."
                 />
               </div>
             </TabsContent>

@@ -9,8 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQueryParams } from "@/utils/url-params";
 import { useMemo } from "react";
-import { MG1Calculator } from "./mmg1/mmg1-calculator";
-import { MG1PCalculator } from "./mg1-p/mg1-p-calculator";
+import { MG1Calculator } from "./mg1/mg1-calculator";
+import { MG1PCalculator } from "./mg1Priority/mg1Priority-calculator";
 
 type Model = {
   value: string;
@@ -59,13 +59,13 @@ const models: Model[] = [
     value: "mmg1",
     label: "M/G/1",
     description:
-      "Fila com um único servidor, chegadas seguindo distribuição de Poisson e tempos de serviço não exponenciais.",
+      "Fila com servidor único, chegadas Poisson e tempo de serviço com distribuição geral (média e variância conhecidas), atendimento FIFO.",
   },
   {
     value: "mg1-p",
     label: "M/G/1 com prioridades",
     description:
-      "Arrumar",
+      "Fila M/G/1 com classes de prioridade (ex.: alta/baixa), onde clientes prioritários são atendidos primeiro, sem interromper serviços em andamento.",
   }
 ];
 

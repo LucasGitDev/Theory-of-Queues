@@ -1,6 +1,6 @@
 "use client";
 
-import { MMG1Results } from "@/components/queues/mmg1/mmg1-results";
+import { MMG1Results } from "@/components/queues/mg1/mg1-results";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
