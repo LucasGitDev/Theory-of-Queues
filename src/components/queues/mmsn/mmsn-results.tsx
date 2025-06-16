@@ -19,6 +19,8 @@ interface MMSNResultsProps {
     W: number;       // Tempo médio no sistema
     Wq: number;      // Tempo médio na fila
     Pn: number[];    // Probabilidades de estado
+    operationalRobots: number; // Número médio de robôs operacionais (N - L)
+    idleTechnicians: number;
   };
   className?: string;
 }
@@ -169,6 +171,45 @@ export function MMSNResults({ results, className }: MMSNResultsProps) {
                     unidades de tempo
                   </div>
                 </div>
+
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Número médio de unidades operacionais
+                  </div>
+                  <div className="mt-1 text-2xl font-bold">
+                    {formatNumber(results.operationalRobots)}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    unidades em funcionamento
+                  </div>
+                </div>
+
+                {/* Cartão 2: Tempo médio de inatividade */}
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Tempo médio de inatividade por unidade
+                  </div>
+                  <div className="mt-1 text-2xl font-bold">
+                    {formatNumber(results.W)}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    horas de espera por unidades
+                  </div>
+                </div>
+
+                {/* Cartão 3: Porcentagem de ociosidade */}
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Porcentagem de ociosidade da equipe
+                  </div>
+                  <div className="mt-1 text-2xl font-bold">
+                    {formatNumber(results.idleTechnicians)}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    tempo sem atividade de manutenção
+                  </div>
+                </div>
+
               </div>
             </TabsContent>
 
@@ -276,6 +317,48 @@ export function MMSNResults({ results, className }: MMSNResultsProps) {
                   ]}
                   explanation="Tempo médio que uma máquina espera para ser consertada."
                 />
+              </div>
+
+              <div className="space-y-6">
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <FormulaDisplay
+                    formula="\\text{Unidades operacionais} = N - L"
+                    calculationSteps={[
+                      `= ${results.n} - ${formatNumber(results.L)}`,
+                      `= ${formatNumber(results.operationalRobots)}`
+                    ]}
+                    explanation="Total de máquinas (N) menos o número médio de máquinas quebradas (L)."
+                  />
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Valor calculado:
+                    </div>
+                    <div className="text-2xl font-bold">
+                      {formatNumber(results.operationalRobots)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cartão 2: Tempo médio de inatividade */}
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <FormulaDisplay
+                    formula="W = \\frac{L}{λ_{eff}}"
+                    calculationSteps={[
+                      `= \\frac{${formatNumber(results.L)}}{${formatNumber(results.lambdaEff)}}`,
+                      `= ${formatNumber(results.W)} \\text{ horas}`
+                    ]}
+                    explanation="Tempo total que uma máquina fica parada (espera + reparo)."
+                  />
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="text-sm font-medium text-muted-foreground">
+                      Valor calculado:
+                    </div>
+                    <div className="text-2xl font-bold">
+                      {formatNumber(results.W)} horas
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </TabsContent>
           </div>

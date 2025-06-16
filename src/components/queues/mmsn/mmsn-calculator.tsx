@@ -22,6 +22,8 @@ export type MMSNResultsType = {
   W: number;       // Tempo médio no sistema
   Wq: number;      // Tempo médio na fila
   Pn: number[];    // Probabilidades de estado
+  operationalRobots: number; // Número médio de robôs operacionais (N - L)
+  idleTechnicians: number;
 };
 
 export function MMSNCalculator() {
@@ -96,6 +98,13 @@ export function MMSNCalculator() {
     // Tempo médio na fila (Wq)
     const Wq = Lq / lambdaEff;
 
+
+    // Número médio de robôs operacionais
+    const operationalRobots = NValue - L;
+
+
+    const idleTechnicians = 1 - (lambdaEff / sValue)
+
     setResults({
       lambda: lambdaValue,
       mu: muValue,
@@ -108,7 +117,9 @@ export function MMSNCalculator() {
       Lq,
       W,
       Wq,
-      Pn
+      Pn,
+      operationalRobots,
+      idleTechnicians
     });
 
     setError(null);
