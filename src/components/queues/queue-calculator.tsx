@@ -74,7 +74,7 @@ const models: Model[] = [
 export function QueueCalculator() {
   // memo the models
   const memoizedModels = useMemo(() => models, []);
-  const { getQueryParam, setQueryParams } = useQueryParams();
+  const { getQueryParam, setQueryParams, clearQueryParams } = useQueryParams();
   const selectedModel = getQueryParam("model") || "mm1";
 
   useEffect(() => {
@@ -89,6 +89,10 @@ export function QueueCalculator() {
   const handleCopyUrl = () => {
     const url = window.location.href;
     navigator.clipboard.writeText(url);
+  };
+
+  const handleClearForm = () => {
+    clearQueryParams();
   };
 
   return (
@@ -127,8 +131,15 @@ export function QueueCalculator() {
             </div>
 
             <div className="flex justify-end px-6">
-              <Button variant="outline" onClick={handleCopyUrl}>
+              <Button
+                variant="outline"
+                onClick={handleCopyUrl}
+                className="mr-2"
+              >
                 Copiar URL
+              </Button>
+              <Button variant="outline" onClick={handleClearForm}>
+                Limpar Formulário
               </Button>
             </div>
 

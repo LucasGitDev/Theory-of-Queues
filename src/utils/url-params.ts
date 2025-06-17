@@ -51,5 +51,9 @@ export function useQueryParams() {
     [setQueryParams]
   );
 
-  return { getQueryParam, getAll, setQueryParams, setMany };
+  const clearQueryParams = useCallback(() => {
+    router.push(location.pathname);
+  }, [router]);
+
+  return { getQueryParam, getAll, setQueryParams, setMany, clearQueryParams };
 }
