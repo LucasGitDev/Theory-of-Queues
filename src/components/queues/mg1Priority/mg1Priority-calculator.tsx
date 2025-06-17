@@ -158,8 +158,6 @@ export function MG1PCalculator() {
         }
 
         // Calcular Wq (tempo médio de espera na fila)
-
-        console.log(sigma_k_minus_1, sigma_k)
         const Wq = k === 0
           ? numerator / (2 * (1 - sigma_k_minus_1) * (1 - sigma_k))
           : totalLambda / ((1 - sigma_k_minus_1) * (1 - sigma_k));
@@ -268,7 +266,7 @@ export function MG1PCalculator() {
             <CardContent className="p-6 flex flex-col items-center justify-center min-h-[200px] text-center">
               <h3 className="text-lg font-medium mb-2">Resultados</h3>
               <p className="text-muted-foreground">
-                Insira os parâmetros e clique em "Calcular" para ver os resultados.
+                Insira os parâmetros e clique em Calcular para ver os resultados.
               </p>
             </CardContent>
           </Card>

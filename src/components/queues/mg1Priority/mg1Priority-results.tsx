@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { useState } from "react";
 import { MG1PriorityResults } from './mg1Priority-calculator'
 
 interface MG1PResultsProps {
@@ -9,11 +8,7 @@ interface MG1PResultsProps {
   className?: string;
 }
 
-export function MG1PResults({ results, className }: MG1PResultsProps) {
-  const [, setActiveTab] = useState("summary");
-  const formatNumber = (num: number, precision: number = 4) => {
-    return num.toFixed(precision);
-  };
+export function MG1PResults({ results }: MG1PResultsProps) {
 
   return (
     <Card>

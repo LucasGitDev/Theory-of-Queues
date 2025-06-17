@@ -26,11 +26,6 @@ export type MG1ResultsType = {
   rho: number;
 
   /**
-   * @property {number} n - O número de clientes no sistema
-   */
-  n: number;
-
-  /**
    * @property {number} L - O número médio de clientes no sistema
    */
   L: number;
@@ -56,11 +51,6 @@ export type MG1ResultsType = {
   P0: number;
 
   /**
-   * @property {number} waitingTime - O tempo de espera
-   */
-  waitingTime: number;
-
-  /**
   * @property {number} sigmaSquared - Variância do tempo de serviço
   */
   sigmaSquared: number;
@@ -70,20 +60,12 @@ export type MG1ResultsType = {
 export function MG1Calculator() {
   const [lambda, setLambda] = useState<string>("");
   const [mu, setMu] = useState<string>("");
-  const [waitingTime, setWaitingTime] = useState<string>("");
-  const [n, setN] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<MG1ResultsType | null>(null);
 
   const calculateResults = () => {
     const lambdaValue = Number.parseFloat(lambda);
     const muValue = Number.parseFloat(mu);
-    const waitingTimeValue = Number.parseFloat(waitingTime);
-    let nValue = Number.parseFloat(n);
-
-    if (nValue < 0 || !nValue) {
-      nValue = 0;
-    }
 
     if (isNaN(lambdaValue) || isNaN(muValue)) {
       setError("Por favor, insira valores numéricos válidos para λ e μ.");
@@ -99,11 +81,6 @@ export function MG1Calculator() {
       setError(
         "A taxa de chegada (λ) deve ser menor que a taxa de serviço (μ) para que o sistema seja estável. Caso contrário, a fila crescerá indefinidamente."
       );
-      return;
-    }
-
-    if (waitingTimeValue && waitingTimeValue < 0) {
-      setError("O tempo de espera não pode ser negativo.");
       return;
     }
 
@@ -130,9 +107,7 @@ export function MG1Calculator() {
     const results: MG1ResultsType = {
       lambda: lambdaValue,
       mu: muValue,
-      waitingTime: waitingTimeValue,
       rho,
-      n: nValue,
       L,
       Lq,
       W,
