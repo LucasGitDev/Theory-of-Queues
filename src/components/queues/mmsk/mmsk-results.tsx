@@ -4,23 +4,10 @@ import { FormulaDisplay } from "@/components/queues/formula-display";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
+import { MMSKResultsType } from "./mmsk-calculator";
 
 interface MMSKResultsProps {
-  results: {
-    lambda: number;
-    mu: number;
-    s: number;
-    k: number;
-    rho: number;
-    P0: number;
-    PK: number;
-    lambdaEff: number;
-    L: number;
-    Lq: number;
-    W: number;
-    Wq: number;
-    Pn: number[];
-  };
+  results: MMSKResultsType;
   className?: string;
 }
 
@@ -30,16 +17,6 @@ export function MMSKResults({ results, className }: MMSKResultsProps) {
   const formatNumber = (num: number) => {
     return num.toFixed(4);
   };
-
-  // Função para calcular fatorial
-  // const factorial = (n: number): number => {
-  //   if (n === 0 || n === 1) return 1;
-  //   let result = 1;
-  //   for (let i = 2; i <= n; i++) {
-  //     result *= i;
-  //   }
-  //   return result;
-  // };
 
   return (
     <Card className={className}>
@@ -193,6 +170,23 @@ export function MMSKResults({ results, className }: MMSKResultsProps) {
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
                     unidades de tempo
+                  </div>
+                </div>
+
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Probabilidade de bloqueio (P_K)
+                  </div>
+                  <div className="mt-1 text-2xl font-bold">
+                    {formatNumber(results.Pk)}
+                  </div>
+                </div>
+                <div className="rounded-lg border p-4 bg-white dark:bg-slate-950">
+                  <div className="text-sm font-medium text-muted-foreground">
+                    Taxa de perdas por bloqueio (λ·P_K)
+                  </div>
+                  <div className="mt-1 text-2xl font-bold">
+                    {formatNumber(results.lambda * results.Pk)}
                   </div>
                 </div>
               </div>

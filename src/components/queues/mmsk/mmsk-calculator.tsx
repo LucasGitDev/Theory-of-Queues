@@ -23,96 +23,87 @@ export type MMSKResultsType = {
   W: number;
   Wq: number;
   Pn: number[];
+  Pk: number;
 };
 
 export function MMSKCalculator() {
-  const [lambda, setLambda] = useState<string>("");
-  const [mu, setMu] = useState<string>("");
-  const [s, setS] = useState<string>("");
-  const [k, setK] = useState<string>("");
+  const [lambdaState, setLambda] = useState<string>("");
+  const [muState, setMu] = useState<string>("");
+  const [sState, setS] = useState<string>("");
+  const [kState, setK] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<MMSKResultsType | null>(null);
 
   const calculateResults = () => {
-    const lambdaValue = Number.parseFloat(lambda);
-    const muValue = Number.parseFloat(mu);
-    const sValue = Number.parseInt(s);
-    const kValue = Number.parseInt(k);
+    const lambda = Number.parseFloat(lambdaState);
+    const mu = Number.parseFloat(muState);
+    const s = Number.parseInt(sState);
+    const k = Number.parseInt(kState);
 
-    if (
-      isNaN(lambdaValue) ||
-      isNaN(muValue) ||
-      isNaN(sValue) ||
-      isNaN(kValue)
-    ) {
+    if (isNaN(lambda) || isNaN(mu) || isNaN(s) || isNaN(k)) {
       setError("Por favor, insira valores numéricos válidos.");
       return;
     }
 
-    if (lambdaValue <= 0 || muValue <= 0 || sValue <= 0 || kValue <= 0) {
+    if (lambda <= 0 || mu <= 0 || s <= 0 || k <= 0) {
       setError("Todos os valores devem ser maiores que zero.");
       return;
     }
 
-    if (sValue !== Math.floor(sValue) || kValue !== Math.floor(kValue)) {
+    if (s !== Math.floor(s) || k !== Math.floor(k)) {
       setError(
         "O número de servidores (s) e a capacidade do sistema (K) devem ser números inteiros."
       );
       return;
     }
 
-    if (kValue <= sValue) {
+    if (k <= s) {
       setError(
         "A capacidade do sistema (K) deve ser maior que o número de servidores (s)."
       );
       return;
     }
 
-    const rho = lambdaValue / (sValue * muValue);
+    const rho = lambda / (s * mu);
 
     // Cálculo de P0 (probabilidade de sistema vazio)
     let sum1 = 0;
-    for (let n = 0; n <= sValue - 1; n++) {
-      sum1 += Math.pow(lambdaValue / muValue, n) / factorial(n);
+    for (let n = 0; n <= s - 1; n++) {
+      sum1 += Math.pow(lambda / mu, n) / factorial(n);
     }
 
     let sum2 = 0;
-    for (let n = 0; n <= kValue - sValue; n++) {
-      sum2 += Math.pow(lambdaValue / (sValue * muValue), n);
+    for (let n = 0; n <= k - s; n++) {
+      sum2 += Math.pow(lambda / (s * mu), n);
     }
 
-    const P0 =
-      1 /
-      (sum1 +
-        (Math.pow(lambdaValue / muValue, sValue) / factorial(sValue)) * sum2);
+    const P0 = 1 / (sum1 + (Math.pow(lambda / mu, s) / factorial(s)) * sum2);
 
     // Cálculo das probabilidades Pn
     const Pn = [];
-    for (let n = 0; n <= kValue; n++) {
-      if (n <= sValue) {
-        Pn[n] = (Math.pow(lambdaValue / muValue, n) / factorial(n)) * P0;
+    for (let n = 0; n <= k; n++) {
+      if (n <= s) {
+        Pn[n] = (Math.pow(lambda / mu, n) / factorial(n)) * P0;
       } else {
         Pn[n] =
-          (Math.pow(lambdaValue / muValue, n) /
-            (factorial(sValue) * Math.pow(sValue, n - sValue))) *
-          P0;
+          (Math.pow(lambda / mu, n) / (factorial(s) * Math.pow(s, n - s))) * P0;
       }
     }
 
     // Probabilidade de perda (PK)
-    const PK = Pn[kValue];
+    const PK = Pn[k];
 
     // Taxa efetiva de chegada
-    const lambdaEff = lambdaValue * (1 - PK);
+    const lambdaEff = lambda * (1 - PK);
 
     // Número médio de clientes no sistema (L)
     let L = 0;
-    for (let n = 1; n <= kValue; n++) {
+    for (let n = 1; n <= k; n++) {
       L += n * Pn[n];
     }
 
     // Número médio de clientes na fila (Lq)
-    const Lq = L - lambdaEff / muValue;
+    const Lq = L - lambdaEff / mu;
 
     // Tempo médio no sistema (W)
     const W = L / lambdaEff;
@@ -120,11 +111,14 @@ export function MMSKCalculator() {
     // Tempo médio na fila (Wq)
     const Wq = Lq / lambdaEff;
 
+    // Probabilidade de bloqueio (Pk)
+    const Pk = ((lambda / mu) ** k / (factorial(s) * s ** (k - s))) * P0;
+
     setResults({
-      lambda: lambdaValue,
-      mu: muValue,
-      s: sValue,
-      k: kValue,
+      lambda: lambda,
+      mu: mu,
+      s: s,
+      k: k,
       rho,
       P0,
       PK,
@@ -134,6 +128,7 @@ export function MMSKCalculator() {
       W,
       Wq,
       Pn,
+      Pk,
     });
 
     setError(null);
@@ -179,7 +174,7 @@ export function MMSKCalculator() {
                   step="0.01"
                   min="0.01"
                   placeholder="Ex: 15"
-                  value={lambda}
+                  value={lambdaState}
                   onChange={(e) => setLambda(e.target.value)}
                 />
               </div>
@@ -197,7 +192,7 @@ export function MMSKCalculator() {
                   step="0.01"
                   min="0.01"
                   placeholder="Ex: 4"
-                  value={mu}
+                  value={muState}
                   onChange={(e) => setMu(e.target.value)}
                 />
               </div>
@@ -215,7 +210,7 @@ export function MMSKCalculator() {
                   step="1"
                   min="1"
                   placeholder="Ex: 3"
-                  value={s}
+                  value={sState}
                   onChange={(e) => setS(e.target.value)}
                 />
               </div>
@@ -233,7 +228,7 @@ export function MMSKCalculator() {
                   step="1"
                   min="1"
                   placeholder="Ex: 10"
-                  value={k}
+                  value={kState}
                   onChange={(e) => setK(e.target.value)}
                 />
               </div>
