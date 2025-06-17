@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useQueryParams } from "@/utils/url-params";
 import { AlertCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -87,10 +88,14 @@ export type MM1ResultsType = {
 };
 
 export function MM1Calculator() {
-  const [lambda, setLambda] = useState<string>("");
-  const [mu, setMu] = useState<string>("");
-  const [waitingTime, setWaitingTime] = useState<string>("");
-  const [n, setN] = useState<string>("");
+  const { getQueryParam, setQueryParams } = useQueryParams();
+
+  const [lambda, setLambda] = useState<string>(getQueryParam("lambda") || "");
+  const [mu, setMu] = useState<string>(getQueryParam("mu") || "");
+  const [waitingTime, setWaitingTime] = useState<string>(
+    getQueryParam("waitingTime") || ""
+  );
+  const [n, setN] = useState<string>(getQueryParam("n") || "");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<MM1ResultsType | null>(null);
 
@@ -99,6 +104,13 @@ export function MM1Calculator() {
     const muValue = Number.parseFloat(mu);
     const waitingTimeValue = Number.parseFloat(waitingTime);
     let nValue = Number.parseFloat(n);
+
+    setQueryParams({
+      lambda: lambdaValue.toString(),
+      mu: muValue.toString(),
+      waitingTime: waitingTimeValue.toString(),
+      n: nValue.toString(),
+    });
 
     if (nValue < 0 || !nValue) {
       nValue = 0;

@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useQueryParams } from "@/utils/url-params";
 import { AlertCircle } from "lucide-react";
 import { useState } from "react";
 
 export function MM1NCalculator() {
-  const [lambda, setLambda] = useState<string>("");
-  const [mu, setMu] = useState<string>("");
-  const [n, setN] = useState<string>("");
+  const { getQueryParam, setQueryParams } = useQueryParams();
+
+  const [lambda, setLambda] = useState<string>(getQueryParam("lambda") || "");
+  const [mu, setMu] = useState<string>(getQueryParam("mu") || "");
+  const [n, setN] = useState<string>(getQueryParam("n") || "");
   const [error, setError] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [results, setResults] = useState<any>(null);
@@ -21,6 +24,12 @@ export function MM1NCalculator() {
     const lambdaValue = Number.parseFloat(lambda);
     const muValue = Number.parseFloat(mu);
     const nValue = Number.parseInt(n);
+
+    setQueryParams({
+      lambda: lambdaValue.toString(),
+      mu: muValue.toString(),
+      n: nValue.toString(),
+    });
 
     if (isNaN(lambdaValue) || isNaN(muValue) || isNaN(nValue)) {
       setError("Por favor, insira valores numéricos válidos.");

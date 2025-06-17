@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
-import { MG1PResults } from './mg1Priority-results';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useQueryParams } from "@/utils/url-params";
+import { AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { MG1PResults } from "./mg1Priority-results";
 
 type PriorityClass = {
   lambda: number;
@@ -40,16 +41,32 @@ export type MG1PriorityResults = {
 };
 
 export function MG1PCalculator() {
-  const [lambdaValues, setLambdaValues] = useState<string[]>(['', '', '']);
-  const [mu, setMu] = useState<string>('');
-  const [serverCount, setServerCount] = useState<string>('1');
+  const { getQueryParam, setQueryParams } = useQueryParams();
+
+  const [lambdaValues, setLambdaValues] = useState<string[]>([
+    getQueryParam("lambda1") || "",
+    getQueryParam("lambda2") || "",
+    getQueryParam("lambda3") || "",
+  ]);
+  const [mu, setMu] = useState<string>(getQueryParam("mu") || "");
+  const [serverCount, setServerCount] = useState<string>(
+    getQueryParam("serverCount") || "1"
+  );
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<MG1PriorityResults | null>(null);
 
   const calculateResults = () => {
     const muValue = parseFloat(mu);
     const s = parseInt(serverCount) || 1;
-    const sigmaSqValue = 1 / (muValue ** 2) // 1/μ²
+    const sigmaSqValue = 1 / muValue ** 2; // 1/μ²
+
+    setQueryParams({
+      lambda1: lambdaValues[0],
+      lambda2: lambdaValues[1],
+      lambda3: lambdaValues[2],
+      mu: mu,
+      serverCount: serverCount,
+    });
 
     // Parse priority classes
     const classes: PriorityClass[] = [];
@@ -60,7 +77,7 @@ export function MG1PCalculator() {
       if (lambda > 0) {
         classes.push({
           lambda,
-          label: `Classe ${i + 1} (Prioridade ${i + 1})`
+          label: `Classe ${i + 1} (Prioridade ${i + 1})`,
         });
         totalLambda += lambda;
       }
@@ -78,7 +95,11 @@ export function MG1PCalculator() {
     }
 
     if (totalLambda >= s * muValue) {
-      setError(`A taxa total de chegada (${totalLambda}) deve ser menor que s×μ (${s * muValue}) para estabilidade.`);
+      setError(
+        `A taxa total de chegada (${totalLambda}) deve ser menor que s×μ (${
+          s * muValue
+        }) para estabilidade.`
+      );
       return;
     }
 
@@ -88,15 +109,17 @@ export function MG1PCalculator() {
       mu: muValue,
       rho,
       sigmaSquared: sigmaSqValue,
-      classes
+      classes,
     };
 
     // Simple M/G/1 results (no priorities)
     if (classes.length === 0) {
       const lambda = parseFloat(lambdaValues[0]) || 0;
-      const Lq = (Math.pow(lambda, 2) * sigmaSqValue + Math.pow(rho, 2)) / (2 * (1 - rho));
+      const Lq =
+        (Math.pow(lambda, 2) * sigmaSqValue + Math.pow(rho, 2)) /
+        (2 * (1 - rho));
       const Wq = Lq / lambda;
-      const W = Wq + (1 / muValue);
+      const W = Wq + 1 / muValue;
       const L = lambda * W;
       const P0 = 1 - rho;
 
@@ -120,7 +143,6 @@ export function MG1PCalculator() {
         Lq: [] as number[],
       };
 
-
       let sumLambdasBefore = 0;
 
       classes.forEach((classInfo, k) => {
@@ -129,13 +151,15 @@ export function MG1PCalculator() {
 
         // ----- COM INTERRUPÇÃO -----
 
-        const W_with = k === 0
-          ? 1 / (muValue - lambdaK)
-          : muValue / ((muValue - sumLambdasBefore) * (muValue - sumLambdasUpToK));
+        const W_with =
+          k === 0
+            ? 1 / (muValue - lambdaK)
+            : muValue /
+              ((muValue - sumLambdasBefore) * (muValue - sumLambdasUpToK));
 
-        const Wq_with = W_with - (1 / muValue);
+        const Wq_with = W_with - 1 / muValue;
         const L_with = sumLambdasUpToK * W_with;
-        const Lq_with = L_with - (sumLambdasUpToK / muValue);
+        const Lq_with = L_with - sumLambdasUpToK / muValue;
 
         withInt.W.push(W_with);
         withInt.Wq.push(Wq_with);
@@ -158,21 +182,22 @@ export function MG1PCalculator() {
         }
 
         // Calcular Wq (tempo médio de espera na fila)
-        const Wq = k === 0
-          ? numerator / (2 * (1 - sigma_k_minus_1) * (1 - sigma_k))
-          : totalLambda / ((1 - sigma_k_minus_1) * (1 - sigma_k));
+        const Wq =
+          k === 0
+            ? numerator / (2 * (1 - sigma_k_minus_1) * (1 - sigma_k))
+            : totalLambda / ((1 - sigma_k_minus_1) * (1 - sigma_k));
 
         // Calcular as outras métricas
-        const W = Wq + (1 / muValue); // Tempo médio no sistema
-        const L = lambdaK * W;        // Número médio no sistema
-        const Lq = lambdaK * Wq;      // Número médio na fila
+        const W = Wq + 1 / muValue; // Tempo médio no sistema
+        const L = lambdaK * W; // Número médio no sistema
+        const Lq = lambdaK * Wq; // Número médio na fila
 
         withoutInt.W.push(W);
         withoutInt.Wq.push(Wq);
         withoutInt.L.push(L);
         withoutInt.Lq.push(Lq);
         sumLambdasBefore += lambdaK;
-      })
+      });
 
       results.withInterruption = withInt;
       results.withoutInterruption = withoutInt;
@@ -206,9 +231,7 @@ export function MG1PCalculator() {
 
             <div className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="servers">
-                  Número de servidores (s)
-                </Label>
+                <Label htmlFor="servers">Número de servidores (s)</Label>
                 <Input
                   id="servers"
                   type="number"
@@ -219,9 +242,7 @@ export function MG1PCalculator() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="mu">
-                  Taxa de serviço por servidor (μ)
-                </Label>
+                <Label htmlFor="mu">Taxa de serviço por servidor (μ)</Label>
                 <Input
                   id="mu"
                   type="number"
@@ -232,7 +253,9 @@ export function MG1PCalculator() {
                 />
               </div>
 
-              <h4 className="font-medium mt-4">Taxas de Chegada por Classe (opcional)</h4>
+              <h4 className="font-medium mt-4">
+                Taxas de Chegada por Classe (opcional)
+              </h4>
 
               {[0, 1, 2].map((index) => (
                 <div key={index} className="grid gap-2">
@@ -266,7 +289,8 @@ export function MG1PCalculator() {
             <CardContent className="p-6 flex flex-col items-center justify-center min-h-[200px] text-center">
               <h3 className="text-lg font-medium mb-2">Resultados</h3>
               <p className="text-muted-foreground">
-                Insira os parâmetros e clique em Calcular para ver os resultados.
+                Insira os parâmetros e clique em Calcular para ver os
+                resultados.
               </p>
             </CardContent>
           </Card>

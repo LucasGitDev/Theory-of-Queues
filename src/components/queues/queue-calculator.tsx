@@ -8,7 +8,8 @@ import { MMSKCalculator } from "@/components/queues/mmsk/mmsk-calculator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQueryParams } from "@/utils/url-params";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { Button } from "../ui/button";
 import { MG1Calculator } from "./mg1/mg1-calculator";
 import { MG1PCalculator } from "./mg1Priority/mg1Priority-calculator";
 import { MMSNCalculator } from "./mmsn/mmsn-calculator";
@@ -67,7 +68,7 @@ const models: Model[] = [
     label: "M/G/1 com prioridades",
     description:
       "Fila M/G/1 com classes de prioridade (ex.: alta/baixa), onde clientes prioritários são atendidos primeiro, sem interromper serviços em andamento.",
-  }
+  },
 ];
 
 export function QueueCalculator() {
@@ -76,9 +77,18 @@ export function QueueCalculator() {
   const { getQueryParam, setQueryParams } = useQueryParams();
   const selectedModel = getQueryParam("model") || "mm1";
 
+  useEffect(() => {
+    setQueryParams({ model: selectedModel });
+  }, [selectedModel, setQueryParams]);
+
   const handleModelChange = (value: string) => {
     console.log(value);
     setQueryParams({ model: value });
+  };
+
+  const handleCopyUrl = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
   };
 
   return (
@@ -116,7 +126,13 @@ export function QueueCalculator() {
               </div>
             </div>
 
-            <div className="p-6">
+            <div className="flex justify-end px-6">
+              <Button variant="outline" onClick={handleCopyUrl}>
+                Copiar URL
+              </Button>
+            </div>
+
+            <div className="px-6">
               <TabsContent value="mm1" className="mt-0">
                 <MM1Calculator />
               </TabsContent>
