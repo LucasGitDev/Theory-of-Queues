@@ -142,35 +142,37 @@ export function MG1PCalculator() {
         withInt.L.push(L_with);
         withInt.Lq.push(Lq_with);
 
-        // ----- SEM INTERRUPÇÃO -----
+        // ----- SEM INTERRUPÇÃO (NON-PREEMPTIVE) -----
 
-        const sumLambdaBeforeK = sumLambdasBefore;
-        // Soma dos lambdas até a classe k (Σλi, i=1 até k)
-        const sumLambdaUpToK = sumLambdasBefore + lambdaK;
+        // Calcular sigma_{k-1} e sigma_k
+        const sigma_k_minus_1 = sumLambdasBefore / muValue;
+        const sigma_k = (sumLambdasBefore + lambdaK) / muValue;
 
-        // Cálculo do termo W conforme a imagem
-        const termoRaiz = Math.sqrt((muValue - totalLambda) /
-          (Math.pow(totalLambda / muValue, 1) *
-            (1 + (totalLambda / muValue))));
+        // Segundo momento do tempo de serviço (assumindo M/M/1, E[S^2] = 2/μ²)
+        const ESquared = 2 / (muValue * muValue);
 
-        const termoIntermediario = termoRaiz + muValue;
+        // Numerador: somatório de lambda_i * E[S_i^2] para todas as classes
+        let numerator = 0;
+        for (let i = 0; i < classes.length; i++) {
+          numerator += classes[i].lambda * ESquared;
+        }
 
-        // Fórmula completa de W
-        const W = (1 / termoIntermediario) *
-          (1 - (sumLambdaBeforeK / muValue)) *
-          (1 - (sumLambdaUpToK / muValue)) +
-          (1 / muValue);
+        // Calcular Wq (tempo médio de espera na fila)
 
-        // Cálculos derivados conforme a imagem
-        const Wq = W - (1 / muValue);
-        const L = lambdaK * W;
-        const Lq = lambdaK * Wq;
+        console.log(sigma_k_minus_1, sigma_k)
+        const Wq = k === 0
+          ? numerator / (2 * (1 - sigma_k_minus_1) * (1 - sigma_k))
+          : totalLambda / ((1 - sigma_k_minus_1) * (1 - sigma_k));
+
+        // Calcular as outras métricas
+        const W = Wq + (1 / muValue); // Tempo médio no sistema
+        const L = lambdaK * W;        // Número médio no sistema
+        const Lq = lambdaK * Wq;      // Número médio na fila
 
         withoutInt.W.push(W);
         withoutInt.Wq.push(Wq);
         withoutInt.L.push(L);
         withoutInt.Lq.push(Lq);
-
         sumLambdasBefore += lambdaK;
       })
 

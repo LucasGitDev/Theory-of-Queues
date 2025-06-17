@@ -103,7 +103,7 @@ export function MMSNCalculator() {
     const operationalRobots = NValue - L;
 
 
-    const idleTechnicians = 1 - (lambdaEff / sValue)
+    const idleTechnicians = 1 - (L / NValue)
 
     setResults({
       lambda: lambdaValue,
