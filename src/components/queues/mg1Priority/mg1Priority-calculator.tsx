@@ -120,6 +120,19 @@ export function MG1PCalculator() {
         Lq: [] as number[],
       };
 
+      const serviceTimes = classes.map(c => 1 / muValue);  // E[S] = 1/μ para M/M/1
+      const serviceVariances = classes.map(c => 1 / (muValue ** 2));  // Var[S] = 1/μ² para M/M/1
+      const utilizations = classes.map((c, i) => c.lambda * serviceTimes[i]);  // ρ_i = λ_i × E[S]_i
+      const ESquared = serviceVariances.map((varS, i) => varS + Math.pow(serviceTimes[i], 2));  // E[S²] = Var[S] + (E[S])²
+      const totalRho = utilizations.reduce((acc, curr) => acc + curr, 0);
+
+      // Checagem de estabilidade
+      if (totalRho >= 1) {
+        setError("Sistema instável: soma das utilizações ≥ 1.");
+        return;
+      }
+
+      let rhoSumUntilPrev = 0;
 
       let sumLambdasBefore = 0;
 
@@ -142,43 +155,42 @@ export function MG1PCalculator() {
         withInt.L.push(L_with);
         withInt.Lq.push(Lq_with);
 
+
         // ----- SEM INTERRUPÇÃO (NON-PREEMPTIVE) -----
 
-        // Calcular sigma_{k-1} e sigma_k
-        const sigma_k_minus_1 = sumLambdasBefore / muValue;
-        const sigma_k = (sumLambdasBefore + lambdaK) / muValue;
+        const serviceTimeK = serviceTimes[k];
+        const rhoK = utilizations[k];
+        const rhoUpToK = utilizations.slice(0, k + 1).reduce((acc, curr) => acc + curr, 0);
 
-        // Segundo momento do tempo de serviço (assumindo M/M/1, E[S^2] = 2/μ²)
-        const ESquared = 2 / (muValue * muValue);
+        const numerator = classes.reduce((sum, c, idx) => {
+          return sum + c.lambda * ESquared[idx];
+        }, 0);
 
-        // Numerador: somatório de lambda_i * E[S_i^2] para todas as classes
-        let numerator = 0;
-        for (let i = 0; i < classes.length; i++) {
-          numerator += classes[i].lambda * ESquared;
+        let denominator = 0;
+        if (k === 0) {
+          denominator = 2 * (1 - rhoUpToK);
+        } else {
+          denominator = 2 * (1 - rhoSumUntilPrev) * (1 - rhoUpToK);
         }
 
-        // Calcular Wq (tempo médio de espera na fila)
-        const Wq = k === 0
-          ? numerator / (2 * (1 - sigma_k_minus_1) * (1 - sigma_k))
-          : totalLambda / ((1 - sigma_k_minus_1) * (1 - sigma_k));
-
-        // Calcular as outras métricas
-        const W = Wq + (1 / muValue); // Tempo médio no sistema
-        const L = lambdaK * W;        // Número médio no sistema
-        const Lq = lambdaK * Wq;      // Número médio na fila
+        const Wq = numerator / denominator;
+        const W = Wq + serviceTimeK;
+        const L = lambdaK * W;
+        const Lq = lambdaK * Wq;
 
         withoutInt.W.push(W);
         withoutInt.Wq.push(Wq);
         withoutInt.L.push(L);
         withoutInt.Lq.push(Lq);
-        sumLambdasBefore += lambdaK;
+
+        rhoSumUntilPrev += rhoK;
       })
 
       results.withInterruption = withInt;
       results.withoutInterruption = withoutInt;
     }
 
-    setResults(results);
+    setResults(results)
     setError(null);
   };
 
