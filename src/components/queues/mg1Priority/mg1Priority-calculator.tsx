@@ -49,9 +49,8 @@ export function MG1PCalculator() {
   const calculateResults = () => {
     const muValue = parseFloat(mu);
     const s = parseInt(serverCount) || 1;
-    const sigmaSqValue = 1 / (muValue ** 2) // 1/μ²
+    const sigmaSqValue = 1 / (muValue ** 2);
 
-    // Parse priority classes
     const classes: PriorityClass[] = [];
     let totalLambda = 0;
 
@@ -66,7 +65,6 @@ export function MG1PCalculator() {
       }
     }
 
-    // Validations
     if (isNaN(muValue) || muValue <= 0) {
       setError("A taxa de serviço (μ) deve ser maior que zero.");
       return;
@@ -78,7 +76,7 @@ export function MG1PCalculator() {
     }
 
     if (totalLambda >= s * muValue) {
-      setError(`A taxa total de chegada (${totalLambda}) deve ser menor que s×μ (${s * muValue}) para estabilidade.`);
+      setError(`Sistema instável: a taxa total de chegada (${totalLambda}) ≥ s×μ (${s * muValue}).`);
       return;
     }
 
@@ -91,49 +89,24 @@ export function MG1PCalculator() {
       classes
     };
 
-    // Simple M/G/1 results (no priorities)
-    if (classes.length === 0) {
-      const lambda = parseFloat(lambdaValues[0]) || 0;
-      const Lq = (Math.pow(lambda, 2) * sigmaSqValue + Math.pow(rho, 2)) / (2 * (1 - rho));
-      const Wq = Lq / lambda;
-      const W = Wq + (1 / muValue);
-      const L = lambda * W;
-      const P0 = 1 - rho;
+    if (s === 1) {
+      // -------------------- M/G/1 com Prioridade (Preemptivo e Não Preemptivo) --------------------
 
-      results.simpleMG1 = { L, Lq, W, Wq, P0 };
-    }
-    // Priority system calculations
-    else {
-      // With interruption (preemptive)
-      const withInt = {
-        W: [] as number[],
-        Wq: [] as number[],
-        L: [] as number[],
-        Lq: [] as number[],
-      };
+      const withInt = { W: [] as number[], Wq: [] as number[], L: [] as number[], Lq: [] as number[] };
+      const withoutInt = { W: [] as number[], Wq: [] as number[], L: [] as number[], Lq: [] as number[] };
 
-      // Without interruption (non-preemptive)
-      const withoutInt = {
-        W: [] as number[],
-        Wq: [] as number[],
-        L: [] as number[],
-        Lq: [] as number[],
-      };
-
-      const serviceTimes = classes.map(c => 1 / muValue);  // E[S] = 1/μ para M/M/1
-      const serviceVariances = classes.map(c => 1 / (muValue ** 2));  // Var[S] = 1/μ² para M/M/1
-      const utilizations = classes.map((c, i) => c.lambda * serviceTimes[i]);  // ρ_i = λ_i × E[S]_i
-      const ESquared = serviceVariances.map((varS, i) => varS + Math.pow(serviceTimes[i], 2));  // E[S²] = Var[S] + (E[S])²
+      const serviceTimes = classes.map(() => 1 / muValue);
+      const serviceVariances = classes.map(() => 1 / (muValue ** 2));
+      const utilizations = classes.map((c, i) => c.lambda * serviceTimes[i]);
+      const ESquared = serviceVariances.map((varS, i) => varS + Math.pow(serviceTimes[i], 2));
       const totalRho = utilizations.reduce((acc, curr) => acc + curr, 0);
 
-      // Checagem de estabilidade
       if (totalRho >= 1) {
         setError("Sistema instável: soma das utilizações ≥ 1.");
         return;
       }
 
       let rhoSumUntilPrev = 0;
-
       let sumLambdasBefore = 0;
 
       classes.forEach((classInfo, k) => {
@@ -141,7 +114,6 @@ export function MG1PCalculator() {
         const sumLambdasUpToK = sumLambdasBefore + lambdaK;
 
         // ----- COM INTERRUPÇÃO -----
-
         const W_with = k === 0
           ? 1 / (muValue - lambdaK)
           : muValue / ((muValue - sumLambdasBefore) * (muValue - sumLambdasUpToK));
@@ -155,16 +127,12 @@ export function MG1PCalculator() {
         withInt.L.push(L_with);
         withInt.Lq.push(Lq_with);
 
-
-        // ----- SEM INTERRUPÇÃO (NON-PREEMPTIVE) -----
-
+        // ----- SEM INTERRUPÇÃO -----
         const serviceTimeK = serviceTimes[k];
         const rhoK = utilizations[k];
         const rhoUpToK = utilizations.slice(0, k + 1).reduce((acc, curr) => acc + curr, 0);
 
-        const numerator = classes.reduce((sum, c, idx) => {
-          return sum + c.lambda * ESquared[idx];
-        }, 0);
+        const numerator = classes.reduce((sum, c, idx) => sum + c.lambda * ESquared[idx], 0);
 
         let denominator = 0;
         if (k === 0) {
@@ -184,15 +152,98 @@ export function MG1PCalculator() {
         withoutInt.Lq.push(Lq);
 
         rhoSumUntilPrev += rhoK;
-      })
+        sumLambdasBefore += lambdaK;
+      });
 
       results.withInterruption = withInt;
       results.withoutInterruption = withoutInt;
+
+    } else {
+      // -------------------- M/G/S>1 com Prioridade (Preemptivo e Não Preemptivo) --------------------
+
+      const factorial = (n: number): number => (n <= 1 ? 1 : n * factorial(n - 1));
+
+      const arrivalRates = classes.map(c => c.lambda);
+
+      // ----- NÃO PREEMPTIVO -----
+      const sFact = factorial(s);
+      const r = totalLambda / muValue;
+      const sum_rj_by_jfact = Array.from({ length: s }).reduce<number>((acc, _, j) => acc + Math.pow(r, j) / factorial(j), 0);
+      const r_pow_s = Math.pow(r, s);
+
+      const withoutInt = { W: [] as number[], Wq: [] as number[], L: [] as number[], Lq: [] as number[] };
+
+      arrivalRates.forEach((lambdaI, i) => {
+        const sumToIMinus1 = arrivalRates.slice(0, i).reduce((acc, l) => acc + l, 0);
+        const sumToI = arrivalRates.slice(0, i + 1).reduce((acc, l) => acc + l, 0);
+
+        const termo1 = (sFact * (s * muValue - totalLambda)) / r_pow_s * sum_rj_by_jfact + s * muValue;
+        const termo2 = 1 - sumToIMinus1 / (s * muValue);
+        const termo3 = 1 - sumToI / (s * muValue);
+
+        const denominator = termo1 * termo2 * termo3;
+
+        if (denominator <= 0) {
+          withoutInt.W.push(NaN);
+          withoutInt.Wq.push(NaN);
+          withoutInt.L.push(NaN);
+          withoutInt.Lq.push(NaN);
+        } else {
+          const Wq = 1 / denominator;
+          const W = Wq + 1 / muValue;
+          const Lq = lambdaI * Wq;
+          const L = lambdaI * W;
+
+          withoutInt.W.push(W);
+          withoutInt.Wq.push(Wq);
+          withoutInt.L.push(L);
+          withoutInt.Lq.push(Lq);
+        }
+      });
+
+      results.withoutInterruption = withoutInt;
+
+      // ----- PREEMPTIVO -----
+      const erlangC = (lambd: number, mu: number, s: number): number => {
+        const a = lambd / mu;
+        const sumTerms = Array.from({ length: s }).reduce<number>((acc, _, k) => acc + Math.pow(a, k) / factorial(k), 0);
+        const lastTerm = (Math.pow(a, s) / factorial(s)) * (s * mu) / (s * mu - lambd);
+        return lastTerm / (sumTerms + lastTerm);
+      };
+
+      const withInt = { W: [] as number[], Wq: [] as number[], L: [] as number[], Lq: [] as number[] };
+
+      arrivalRates.forEach((lambdaI, i) => {
+        const sumLambdaI = arrivalRates.slice(0, i + 1).reduce((acc, l) => acc + l, 0);
+
+        const Pw = erlangC(sumLambdaI, muValue, s);
+        const denominator = s * muValue - sumLambdaI;
+
+        if (denominator <= 0) {
+          withInt.W.push(NaN);
+          withInt.Wq.push(NaN);
+          withInt.L.push(NaN);
+          withInt.Lq.push(NaN);
+        } else {
+          const Wq = Pw / denominator;
+          const W = Wq + (1 / muValue);
+          const L = lambdaI * W;
+          const Lq = lambdaI * Wq;
+
+          withInt.W.push(W);
+          withInt.Wq.push(Wq);
+          withInt.L.push(L);
+          withInt.Lq.push(Lq);
+        }
+      });
+
+      results.withInterruption = withInt;
     }
 
-    setResults(results)
+    setResults(results);
     setError(null);
   };
+
 
   const handleLambdaChange = (index: number, value: string) => {
     const newValues = [...lambdaValues];
