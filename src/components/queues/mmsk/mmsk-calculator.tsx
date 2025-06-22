@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useQueryParams } from "@/utils/url-params";
 import { AlertCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -27,10 +28,14 @@ export type MMSKResultsType = {
 };
 
 export function MMSKCalculator() {
-  const [lambdaState, setLambda] = useState<string>("");
-  const [muState, setMu] = useState<string>("");
-  const [sState, setS] = useState<string>("");
-  const [kState, setK] = useState<string>("");
+  const { getQueryParam, setQueryParams } = useQueryParams();
+
+  const [lambdaState, setLambda] = useState<string>(
+    getQueryParam("lambda") || ""
+  );
+  const [muState, setMu] = useState<string>(getQueryParam("mu") || "");
+  const [sState, setS] = useState<string>(getQueryParam("s") || "");
+  const [kState, setK] = useState<string>(getQueryParam("k") || "");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<MMSKResultsType | null>(null);
 
@@ -39,6 +44,13 @@ export function MMSKCalculator() {
     const mu = Number.parseFloat(muState);
     const s = Number.parseInt(sState);
     const k = Number.parseInt(kState);
+
+    setQueryParams({
+      lambda: lambda.toString(),
+      mu: mu.toString(),
+      s: s.toString(),
+      k: k.toString(),
+    });
 
     if (isNaN(lambda) || isNaN(mu) || isNaN(s) || isNaN(k)) {
       setError("Por favor, insira valores numéricos válidos.");

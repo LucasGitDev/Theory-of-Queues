@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useQueryParams } from "@/utils/url-params";
 import { AlertCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -51,21 +52,27 @@ export type MG1ResultsType = {
   P0: number;
 
   /**
-  * @property {number} sigmaSquared - Variância do tempo de serviço
-  */
+   * @property {number} sigmaSquared - Variância do tempo de serviço
+   */
   sigmaSquared: number;
-
 };
 
 export function MG1Calculator() {
-  const [lambda, setLambda] = useState<string>("");
-  const [mu, setMu] = useState<string>("");
+  const { getQueryParam, setQueryParams } = useQueryParams();
+
+  const [lambda, setLambda] = useState<string>(getQueryParam("lambda") || "");
+  const [mu, setMu] = useState<string>(getQueryParam("mu") || "");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<MG1ResultsType | null>(null);
 
   const calculateResults = () => {
     const lambdaValue = Number.parseFloat(lambda);
     const muValue = Number.parseFloat(mu);
+
+    setQueryParams({
+      lambda: lambdaValue.toString(),
+      mu: muValue.toString(),
+    });
 
     if (isNaN(lambdaValue) || isNaN(muValue)) {
       setError("Por favor, insira valores numéricos válidos para λ e μ.");
@@ -84,12 +91,12 @@ export function MG1Calculator() {
       return;
     }
 
-    const rho = lambdaValue / muValue;  // Fator de utilização
+    const rho = lambdaValue / muValue; // Fator de utilização
 
-    const sigmaSquared = 1 / (muValue ** 2);
+    const sigmaSquared = 1 / muValue ** 2;
 
     // Fórmula de Pollaczek-Khinchine para o número médio na fila (Lq):
-    const Lq = ((lambdaValue ** 2) * sigmaSquared + (rho ** 2)) / (2 * (1 - rho));
+    const Lq = (lambdaValue ** 2 * sigmaSquared + rho ** 2) / (2 * (1 - rho));
 
     // Tempo médio na fila (Wq):
     const Wq = Lq / lambdaValue;
@@ -98,11 +105,10 @@ export function MG1Calculator() {
     const L = rho + Lq;
 
     // Tempo médio de espera no sistema (W):
-    const W = Wq + (1 / muValue);
+    const W = Wq + 1 / muValue;
 
     // Probabilidade de não haver clientes no sistema (P0):
     const P0 = 1 - rho;
-
 
     const results: MG1ResultsType = {
       lambda: lambdaValue,
@@ -113,7 +119,7 @@ export function MG1Calculator() {
       W,
       Wq,
       P0,
-      sigmaSquared
+      sigmaSquared,
     };
 
     setResults(results);

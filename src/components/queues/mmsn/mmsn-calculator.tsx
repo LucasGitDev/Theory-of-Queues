@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useQueryParams } from "@/utils/url-params";
 import { AlertCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -14,23 +15,25 @@ export type MMSNResultsType = {
   mu: number;
   s: number;
   n: number;
-  a: number;       // Razão lambda/mu
-  P0: number;      // Probabilidade do sistema estar vazio
+  a: number; // Razão lambda/mu
+  P0: number; // Probabilidade do sistema estar vazio
   lambdaEff: number; // Taxa efetiva de chegada
-  L: number;       // Número médio no sistema
-  Lq: number;      // Número médio na fila
-  W: number;       // Tempo médio no sistema
-  Wq: number;      // Tempo médio na fila
-  Pn: number[];    // Probabilidades de estado
+  L: number; // Número médio no sistema
+  Lq: number; // Número médio na fila
+  W: number; // Tempo médio no sistema
+  Wq: number; // Tempo médio na fila
+  Pn: number[]; // Probabilidades de estado
   operationalRobots: number; // Número médio de robôs operacionais (N - L)
   idleTechnicians: number;
 };
 
 export function MMSNCalculator() {
-  const [lambda, setLambda] = useState<string>("");
-  const [mu, setMu] = useState<string>("");
-  const [s, setS] = useState<string>("");
-  const [n, setN] = useState<string>("");
+  const { getQueryParam, setQueryParams } = useQueryParams();
+
+  const [lambda, setLambda] = useState<string>(getQueryParam("lambda") || "");
+  const [mu, setMu] = useState<string>(getQueryParam("mu") || "");
+  const [s, setS] = useState<string>(getQueryParam("s") || "");
+  const [n, setN] = useState<string>(getQueryParam("n") || "");
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<MMSNResultsType | null>(null);
 
@@ -40,7 +43,19 @@ export function MMSNCalculator() {
     const sValue = Number.parseInt(s);
     const NValue = Number.parseInt(n);
 
-    if (isNaN(lambdaValue) || isNaN(muValue) || isNaN(sValue) || isNaN(NValue)) {
+    setQueryParams({
+      lambda: lambdaValue.toString(),
+      mu: muValue.toString(),
+      s: sValue.toString(),
+      n: NValue.toString(),
+    });
+
+    if (
+      isNaN(lambdaValue) ||
+      isNaN(muValue) ||
+      isNaN(sValue) ||
+      isNaN(NValue)
+    ) {
       setError("Por favor, insira valores numéricos válidos.");
       return;
     }
@@ -51,7 +66,9 @@ export function MMSNCalculator() {
     }
 
     if (sValue !== Math.floor(sValue) || NValue !== Math.floor(NValue)) {
-      setError("O número de servidores (s) e o tamanho da população (N) devem ser números inteiros.");
+      setError(
+        "O número de servidores (s) e o tamanho da população (N) devem ser números inteiros."
+      );
       return;
     }
 
@@ -60,12 +77,19 @@ export function MMSNCalculator() {
     // Cálculo de P0 (probabilidade de sistema vazio)
     let sum1 = 0;
     for (let n = 0; n <= sValue - 1; n++) {
-      sum1 += (factorial(NValue) / (factorial(NValue - n) * factorial(n))) * Math.pow(a, n);
+      sum1 +=
+        (factorial(NValue) / (factorial(NValue - n) * factorial(n))) *
+        Math.pow(a, n);
     }
 
     let sum2 = 0;
     for (let n = sValue; n <= NValue; n++) {
-      sum2 += (factorial(NValue) / (factorial(NValue - n) * factorial(sValue) * Math.pow(sValue, n - sValue))) * Math.pow(a, n);
+      sum2 +=
+        (factorial(NValue) /
+          (factorial(NValue - n) *
+            factorial(sValue) *
+            Math.pow(sValue, n - sValue))) *
+        Math.pow(a, n);
     }
 
     const P0 = 1 / (sum1 + sum2);
@@ -74,9 +98,18 @@ export function MMSNCalculator() {
     const Pn = [];
     for (let n = 0; n <= NValue; n++) {
       if (n <= sValue) {
-        Pn[n] = (factorial(NValue) / (factorial(NValue - n) * factorial(n))) * Math.pow(a, n) * P0;
+        Pn[n] =
+          (factorial(NValue) / (factorial(NValue - n) * factorial(n))) *
+          Math.pow(a, n) *
+          P0;
       } else {
-        Pn[n] = (factorial(NValue) / (factorial(NValue - n) * factorial(sValue) * Math.pow(sValue, n - sValue))) * Math.pow(a, n) * P0;
+        Pn[n] =
+          (factorial(NValue) /
+            (factorial(NValue - n) *
+              factorial(sValue) *
+              Math.pow(sValue, n - sValue))) *
+          Math.pow(a, n) *
+          P0;
       }
     }
 
@@ -90,7 +123,7 @@ export function MMSNCalculator() {
     const lambdaEff = lambdaValue * (NValue - L);
 
     // Número médio de clientes na fila (Lq)
-    const Lq = L - (lambdaEff / muValue);
+    const Lq = L - lambdaEff / muValue;
 
     // Tempo médio no sistema (W)
     const W = L / lambdaEff;
@@ -98,12 +131,10 @@ export function MMSNCalculator() {
     // Tempo médio na fila (Wq)
     const Wq = Lq / lambdaEff;
 
-
     // Número médio de robôs operacionais
     const operationalRobots = NValue - L;
 
-
-    const idleTechnicians = 1 - (L / NValue)
+    const idleTechnicians = 1 - L / NValue;
 
     setResults({
       lambda: lambdaValue,
@@ -119,7 +150,7 @@ export function MMSNCalculator() {
       Wq,
       Pn,
       operationalRobots,
-      idleTechnicians
+      idleTechnicians,
     });
 
     setError(null);

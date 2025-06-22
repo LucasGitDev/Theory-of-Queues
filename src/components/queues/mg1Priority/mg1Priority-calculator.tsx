@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
-import { MG1PResults } from './mg1Priority-results';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useQueryParams } from "@/utils/url-params";
+import { AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { MG1PResults } from "./mg1Priority-results";
 
 type PriorityClass = {
   lambda: number;
@@ -40,9 +41,17 @@ export type MG1PriorityResults = {
 };
 
 export function MG1PCalculator() {
-  const [lambdaValues, setLambdaValues] = useState<string[]>(['', '', '']);
-  const [mu, setMu] = useState<string>('');
-  const [serverCount, setServerCount] = useState<string>('1');
+  const { getQueryParam } = useQueryParams();
+
+  const [lambdaValues, setLambdaValues] = useState<string[]>([
+    getQueryParam("lambda1") || "",
+    getQueryParam("lambda2") || "",
+    getQueryParam("lambda3") || "",
+  ]);
+  const [mu, setMu] = useState<string>(getQueryParam("mu") || "");
+  const [serverCount, setServerCount] = useState<string>(
+    getQueryParam("serverCount") || "1"
+  );
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<MG1PriorityResults | null>(null);
 
@@ -59,7 +68,7 @@ export function MG1PCalculator() {
       if (lambda > 0) {
         classes.push({
           lambda,
-          label: `Classe ${i + 1} (Prioridade ${i + 1})`
+          label: `Classe ${i + 1} (Prioridade ${i + 1})`,
         });
         totalLambda += lambda;
       }
@@ -86,7 +95,7 @@ export function MG1PCalculator() {
       mu: muValue,
       rho,
       sigmaSquared: sigmaSqValue,
-      classes
+      classes,
     };
 
     if (s === 1) {
@@ -118,9 +127,9 @@ export function MG1PCalculator() {
           ? 1 / (muValue - lambdaK)
           : muValue / ((muValue - sumLambdasBefore) * (muValue - sumLambdasUpToK));
 
-        const Wq_with = W_with - (1 / muValue);
+        const Wq_with = W_with - 1 / muValue;
         const L_with = sumLambdasUpToK * W_with;
-        const Lq_with = L_with - (sumLambdasUpToK / muValue);
+        const Lq_with = L_with - sumLambdasUpToK / muValue;
 
         withInt.W.push(W_with);
         withInt.Wq.push(Wq_with);
@@ -269,9 +278,7 @@ export function MG1PCalculator() {
 
             <div className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="servers">
-                  Número de servidores (s)
-                </Label>
+                <Label htmlFor="servers">Número de servidores (s)</Label>
                 <Input
                   id="servers"
                   type="number"
@@ -282,9 +289,7 @@ export function MG1PCalculator() {
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="mu">
-                  Taxa de serviço por servidor (μ)
-                </Label>
+                <Label htmlFor="mu">Taxa de serviço por servidor (μ)</Label>
                 <Input
                   id="mu"
                   type="number"
@@ -295,7 +300,9 @@ export function MG1PCalculator() {
                 />
               </div>
 
-              <h4 className="font-medium mt-4">Taxas de Chegada por Classe (opcional)</h4>
+              <h4 className="font-medium mt-4">
+                Taxas de Chegada por Classe (opcional)
+              </h4>
 
               {[0, 1, 2].map((index) => (
                 <div key={index} className="grid gap-2">
@@ -329,7 +336,8 @@ export function MG1PCalculator() {
             <CardContent className="p-6 flex flex-col items-center justify-center min-h-[200px] text-center">
               <h3 className="text-lg font-medium mb-2">Resultados</h3>
               <p className="text-muted-foreground">
-                Insira os parâmetros e clique em Calcular para ver os resultados.
+                Insira os parâmetros e clique em Calcular para ver os
+                resultados.
               </p>
             </CardContent>
           </Card>
