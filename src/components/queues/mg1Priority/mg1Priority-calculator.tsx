@@ -260,6 +260,17 @@ export function MG1PCalculator() {
     setLambdaValues(newValues);
   };
 
+  const addClass = () => {
+    setLambdaValues([...lambdaValues, ""]);
+  };
+
+  const removeClass = (index: number) => {
+    if (lambdaValues.length <= 1) return; // Mantém pelo menos 1
+    const newValues = [...lambdaValues];
+    newValues.splice(index, 1);
+    setLambdaValues(newValues);
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
@@ -304,21 +315,45 @@ export function MG1PCalculator() {
                 Taxas de Chegada por Classe (opcional)
               </h4>
 
-              {[0, 1, 2].map((index) => (
-                <div key={index} className="grid gap-2">
-                  <Label htmlFor={`lambda${index + 1}`}>
-                    λ{index + 1} (Prioridade {index + 1})
-                  </Label>
-                  <Input
-                    id={`lambda${index + 1}`}
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={lambdaValues[index]}
-                    onChange={(e) => handleLambdaChange(index, e.target.value)}
-                  />
+              {lambdaValues.map((value, index) => (
+                <div
+                  key={index}
+                  className="grid grid-cols-[1fr_auto] items-center gap-2"
+                >
+                  <div className="grid gap-2">
+                    <Label htmlFor={`lambda${index + 1}`}>
+                      λ{index + 1} (Prioridade {index + 1})
+                    </Label>
+                    <Input
+                      id={`lambda${index + 1}`}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={value}
+                      onChange={(e) => handleLambdaChange(index, e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="mt-6 h-8 w-8"
+                    onClick={() => removeClass(index)}
+                    disabled={lambdaValues.length === 1}
+                    title="Remover classe"
+                  >
+                    &times;
+                  </Button>
                 </div>
               ))}
+
+              <Button
+                variant="outline"
+                onClick={addClass}
+                className="w-full mt-2"
+                title="Adicionar nova classe"
+              >
+                + Adicionar Classe
+              </Button>
 
               <Button onClick={calculateResults} className="w-full mt-4">
                 Calcular
