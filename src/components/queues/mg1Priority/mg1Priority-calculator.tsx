@@ -41,7 +41,7 @@ export type MG1PriorityResults = {
 };
 
 export function MG1PCalculator() {
-  const { getQueryParam, setQueryParams } = useQueryParams();
+  const { getQueryParam } = useQueryParams();
 
   const [lambdaValues, setLambdaValues] = useState<string[]>([
     getQueryParam("lambda1") || "",
@@ -58,17 +58,8 @@ export function MG1PCalculator() {
   const calculateResults = () => {
     const muValue = parseFloat(mu);
     const s = parseInt(serverCount) || 1;
-    const sigmaSqValue = 1 / muValue ** 2; // 1/μ²
+    const sigmaSqValue = 1 / (muValue ** 2);
 
-    setQueryParams({
-      lambda1: lambdaValues[0],
-      lambda2: lambdaValues[1],
-      lambda3: lambdaValues[2],
-      mu: mu,
-      serverCount: serverCount,
-    });
-
-    // Parse priority classes
     const classes: PriorityClass[] = [];
     let totalLambda = 0;
 
@@ -83,7 +74,6 @@ export function MG1PCalculator() {
       }
     }
 
-    // Validations
     if (isNaN(muValue) || muValue <= 0) {
       setError("A taxa de serviço (μ) deve ser maior que zero.");
       return;
@@ -95,11 +85,7 @@ export function MG1PCalculator() {
     }
 
     if (totalLambda >= s * muValue) {
-      setError(
-        `A taxa total de chegada (${totalLambda}) deve ser menor que s×μ (${
-          s * muValue
-        }) para estabilidade.`
-      );
+      setError(`Sistema instável: a taxa total de chegada (${totalLambda}) ≥ s×μ (${s * muValue}).`);
       return;
     }
 
@@ -112,37 +98,24 @@ export function MG1PCalculator() {
       classes,
     };
 
-    // Simple M/G/1 results (no priorities)
-    if (classes.length === 0) {
-      const lambda = parseFloat(lambdaValues[0]) || 0;
-      const Lq =
-        (Math.pow(lambda, 2) * sigmaSqValue + Math.pow(rho, 2)) /
-        (2 * (1 - rho));
-      const Wq = Lq / lambda;
-      const W = Wq + 1 / muValue;
-      const L = lambda * W;
-      const P0 = 1 - rho;
+    if (s === 1) {
+      // -------------------- M/G/1 com Prioridade (Preemptivo e Não Preemptivo) --------------------
 
-      results.simpleMG1 = { L, Lq, W, Wq, P0 };
-    }
-    // Priority system calculations
-    else {
-      // With interruption (preemptive)
-      const withInt = {
-        W: [] as number[],
-        Wq: [] as number[],
-        L: [] as number[],
-        Lq: [] as number[],
-      };
+      const withInt = { W: [] as number[], Wq: [] as number[], L: [] as number[], Lq: [] as number[] };
+      const withoutInt = { W: [] as number[], Wq: [] as number[], L: [] as number[], Lq: [] as number[] };
 
-      // Without interruption (non-preemptive)
-      const withoutInt = {
-        W: [] as number[],
-        Wq: [] as number[],
-        L: [] as number[],
-        Lq: [] as number[],
-      };
+      const serviceTimes = classes.map(() => 1 / muValue);
+      const serviceVariances = classes.map(() => 1 / (muValue ** 2));
+      const utilizations = classes.map((c, i) => c.lambda * serviceTimes[i]);
+      const ESquared = serviceVariances.map((varS, i) => varS + Math.pow(serviceTimes[i], 2));
+      const totalRho = utilizations.reduce((acc, curr) => acc + curr, 0);
 
+      if (totalRho >= 1) {
+        setError("Sistema instável: soma das utilizações ≥ 1.");
+        return;
+      }
+
+      let rhoSumUntilPrev = 0;
       let sumLambdasBefore = 0;
 
       classes.forEach((classInfo, k) => {
@@ -150,12 +123,9 @@ export function MG1PCalculator() {
         const sumLambdasUpToK = sumLambdasBefore + lambdaK;
 
         // ----- COM INTERRUPÇÃO -----
-
-        const W_with =
-          k === 0
-            ? 1 / (muValue - lambdaK)
-            : muValue /
-              ((muValue - sumLambdasBefore) * (muValue - sumLambdasUpToK));
+        const W_with = k === 0
+          ? 1 / (muValue - lambdaK)
+          : muValue / ((muValue - sumLambdasBefore) * (muValue - sumLambdasUpToK));
 
         const Wq_with = W_with - 1 / muValue;
         const L_with = sumLambdasUpToK * W_with;
@@ -166,50 +136,138 @@ export function MG1PCalculator() {
         withInt.L.push(L_with);
         withInt.Lq.push(Lq_with);
 
-        // ----- SEM INTERRUPÇÃO (NON-PREEMPTIVE) -----
+        // ----- SEM INTERRUPÇÃO -----
+        const serviceTimeK = serviceTimes[k];
+        const rhoK = utilizations[k];
+        const rhoUpToK = utilizations.slice(0, k + 1).reduce((acc, curr) => acc + curr, 0);
 
-        // Calcular sigma_{k-1} e sigma_k
-        const sigma_k_minus_1 = sumLambdasBefore / muValue;
-        const sigma_k = (sumLambdasBefore + lambdaK) / muValue;
+        const numerator = classes.reduce((sum, c, idx) => sum + c.lambda * ESquared[idx], 0);
 
-        // Segundo momento do tempo de serviço (assumindo M/M/1, E[S^2] = 2/μ²)
-        const ESquared = 2 / (muValue * muValue);
-
-        // Numerador: somatório de lambda_i * E[S_i^2] para todas as classes
-        let numerator = 0;
-        for (let i = 0; i < classes.length; i++) {
-          numerator += classes[i].lambda * ESquared;
+        let denominator = 0;
+        if (k === 0) {
+          denominator = 2 * (1 - rhoUpToK);
+        } else {
+          denominator = 2 * (1 - rhoSumUntilPrev) * (1 - rhoUpToK);
         }
 
-        // Calcular Wq (tempo médio de espera na fila)
-        const Wq =
-          k === 0
-            ? numerator / (2 * (1 - sigma_k_minus_1) * (1 - sigma_k))
-            : totalLambda / ((1 - sigma_k_minus_1) * (1 - sigma_k));
-
-        // Calcular as outras métricas
-        const W = Wq + 1 / muValue; // Tempo médio no sistema
-        const L = lambdaK * W; // Número médio no sistema
-        const Lq = lambdaK * Wq; // Número médio na fila
+        const Wq = numerator / denominator;
+        const W = Wq + serviceTimeK;
+        const L = lambdaK * W;
+        const Lq = lambdaK * Wq;
 
         withoutInt.W.push(W);
         withoutInt.Wq.push(Wq);
         withoutInt.L.push(L);
         withoutInt.Lq.push(Lq);
+
+        rhoSumUntilPrev += rhoK;
         sumLambdasBefore += lambdaK;
       });
 
       results.withInterruption = withInt;
       results.withoutInterruption = withoutInt;
+
+    } else {
+      // -------------------- M/G/S>1 com Prioridade (Preemptivo e Não Preemptivo) --------------------
+
+      const factorial = (n: number): number => (n <= 1 ? 1 : n * factorial(n - 1));
+
+      const arrivalRates = classes.map(c => c.lambda);
+
+      // ----- NÃO PREEMPTIVO -----
+      const sFact = factorial(s);
+      const r = totalLambda / muValue;
+      const sum_rj_by_jfact = Array.from({ length: s }).reduce<number>((acc, _, j) => acc + Math.pow(r, j) / factorial(j), 0);
+      const r_pow_s = Math.pow(r, s);
+
+      const withoutInt = { W: [] as number[], Wq: [] as number[], L: [] as number[], Lq: [] as number[] };
+
+      arrivalRates.forEach((lambdaI, i) => {
+        const sumToIMinus1 = arrivalRates.slice(0, i).reduce((acc, l) => acc + l, 0);
+        const sumToI = arrivalRates.slice(0, i + 1).reduce((acc, l) => acc + l, 0);
+
+        const termo1 = (sFact * (s * muValue - totalLambda)) / r_pow_s * sum_rj_by_jfact + s * muValue;
+        const termo2 = 1 - sumToIMinus1 / (s * muValue);
+        const termo3 = 1 - sumToI / (s * muValue);
+
+        const denominator = termo1 * termo2 * termo3;
+
+        if (denominator <= 0) {
+          withoutInt.W.push(NaN);
+          withoutInt.Wq.push(NaN);
+          withoutInt.L.push(NaN);
+          withoutInt.Lq.push(NaN);
+        } else {
+          const Wq = 1 / denominator;
+          const W = Wq + 1 / muValue;
+          const Lq = lambdaI * Wq;
+          const L = lambdaI * W;
+
+          withoutInt.W.push(W);
+          withoutInt.Wq.push(Wq);
+          withoutInt.L.push(L);
+          withoutInt.Lq.push(Lq);
+        }
+      });
+
+      results.withoutInterruption = withoutInt;
+
+      // ----- PREEMPTIVO -----
+      const erlangC = (lambd: number, mu: number, s: number): number => {
+        const a = lambd / mu;
+        const sumTerms = Array.from({ length: s }).reduce<number>((acc, _, k) => acc + Math.pow(a, k) / factorial(k), 0);
+        const lastTerm = (Math.pow(a, s) / factorial(s)) * (s * mu) / (s * mu - lambd);
+        return lastTerm / (sumTerms + lastTerm);
+      };
+
+      const withInt = { W: [] as number[], Wq: [] as number[], L: [] as number[], Lq: [] as number[] };
+
+      arrivalRates.forEach((lambdaI, i) => {
+        const sumLambdaI = arrivalRates.slice(0, i + 1).reduce((acc, l) => acc + l, 0);
+
+        const Pw = erlangC(sumLambdaI, muValue, s);
+        const denominator = s * muValue - sumLambdaI;
+
+        if (denominator <= 0) {
+          withInt.W.push(NaN);
+          withInt.Wq.push(NaN);
+          withInt.L.push(NaN);
+          withInt.Lq.push(NaN);
+        } else {
+          const Wq = Pw / denominator;
+          const W = Wq + (1 / muValue);
+          const L = lambdaI * W;
+          const Lq = lambdaI * Wq;
+
+          withInt.W.push(W);
+          withInt.Wq.push(Wq);
+          withInt.L.push(L);
+          withInt.Lq.push(Lq);
+        }
+      });
+
+      results.withInterruption = withInt;
     }
 
     setResults(results);
     setError(null);
   };
 
+
   const handleLambdaChange = (index: number, value: string) => {
     const newValues = [...lambdaValues];
     newValues[index] = value;
+    setLambdaValues(newValues);
+  };
+
+  const addClass = () => {
+    setLambdaValues([...lambdaValues, ""]);
+  };
+
+  const removeClass = (index: number) => {
+    if (lambdaValues.length <= 1) return; // Mantém pelo menos 1
+    const newValues = [...lambdaValues];
+    newValues.splice(index, 1);
     setLambdaValues(newValues);
   };
 
@@ -257,21 +315,45 @@ export function MG1PCalculator() {
                 Taxas de Chegada por Classe (opcional)
               </h4>
 
-              {[0, 1, 2].map((index) => (
-                <div key={index} className="grid gap-2">
-                  <Label htmlFor={`lambda${index + 1}`}>
-                    λ{index + 1} (Prioridade {index + 1})
-                  </Label>
-                  <Input
-                    id={`lambda${index + 1}`}
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={lambdaValues[index]}
-                    onChange={(e) => handleLambdaChange(index, e.target.value)}
-                  />
+              {lambdaValues.map((value, index) => (
+                <div
+                  key={index}
+                  className="grid grid-cols-[1fr_auto] items-center gap-2"
+                >
+                  <div className="grid gap-2">
+                    <Label htmlFor={`lambda${index + 1}`}>
+                      λ{index + 1} (Prioridade {index + 1})
+                    </Label>
+                    <Input
+                      id={`lambda${index + 1}`}
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={value}
+                      onChange={(e) => handleLambdaChange(index, e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="mt-6 h-8 w-8"
+                    onClick={() => removeClass(index)}
+                    disabled={lambdaValues.length === 1}
+                    title="Remover classe"
+                  >
+                    &times;
+                  </Button>
                 </div>
               ))}
+
+              <Button
+                variant="outline"
+                onClick={addClass}
+                className="w-full mt-2"
+                title="Adicionar nova classe"
+              >
+                + Adicionar Classe
+              </Button>
 
               <Button onClick={calculateResults} className="w-full mt-4">
                 Calcular
